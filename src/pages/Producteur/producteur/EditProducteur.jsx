@@ -29,6 +29,7 @@ const EditProducteur = () => {
         nompro: '',
         txtref: '',
         dtadd: '',
+        adherent: '',
     });
 
     const tabs = [
@@ -51,6 +52,30 @@ const EditProducteur = () => {
 
     const certifOptions = ['OUI', 'NON', 'Actif'];
 
+    // Function to format date for API (YYYY-MM-DD format for DateOnly)
+    const formatDateForAPI = (dateString) => {
+        if (!dateString) return null;
+
+        try {
+            // If it's already in YYYY-MM-DD format, return as is
+            if (/^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
+                return dateString;
+            }
+
+            // Try to parse and format the date
+            const date = new Date(dateString);
+            if (isNaN(date.getTime())) {
+                return null; // Invalid date
+            }
+
+            // Format as YYYY-MM-DD
+            return date.toISOString().split('T')[0];
+        } catch (error) {
+            console.error('Date formatting error:', error);
+            return null;
+        }
+    };
+
     const fetchAdherent = async () => {
         try {
             setLoading(true);
@@ -59,6 +84,7 @@ const EditProducteur = () => {
             const response = await API.get(`/Adherents/${params.id}`);
             const adherentData = response.data;
 
+            console.log(adherentData)
             // Update form data with fetched adherent data
             setFormData({
                 refadh: adherentData.refadh || '',
@@ -73,7 +99,8 @@ const EditProducteur = () => {
                 type: adherentData.type || '',
                 nompro: adherentData.nompro || '',
                 txtref: adherentData.txtref || '',
-                dtadd: adherentData.dtadd || '',
+                dtadd: adherentData.dtadd || "",
+                adherent: adherentData.adherent || adherentData.nomadh || '',
             });
 
         } catch (err) {
@@ -129,10 +156,11 @@ const EditProducteur = () => {
             viladh: 'Ville / Province',
             teladh: 'Téléphone',
             type: 'Type',
-            nompro: 'Nom Décompte'
+            nompro: 'Nom Décompte',
+            adherent: 'Adhérent'
         };
 
-        const required = ['nomadh', 'cinadh', 'adradh', 'viladh', 'teladh', 'type', 'nompro'];
+        const required = ['nomadh', 'cinadh', 'adradh', 'viladh', 'teladh', 'type', 'nompro', 'adherent'];
         const missing = required.filter(field => !formData[field].trim());
 
         if (missing.length > 0) {
@@ -164,16 +192,20 @@ const EditProducteur = () => {
         setSubmitMessage('');
 
         try {
-            console.log(formData);
+            // Prepare data for submission with proper date formatting
+            const submitData = {
+                ...formData,
+                dtadd: formatDateForAPI(formData.dtadd) // Format date properly for API
+            };
+
+            console.log('Submitting data:', submitData);
 
             // Send PUT request to update the adherent
-            const response = await API.put(`/Adherents/${params.id}`, formData, {
+            const response = await API.put(`/Adherents/${params.id}`, submitData, {
                 headers: {
                     'Content-Type': 'application/json',
                 },
             });
-
-            console.log(response)
 
             if (response.status === 200 || response.status === 201 || response.status === 204) {
                 setSubmitMessage('Adhérent modifié avec succès!');
@@ -186,6 +218,7 @@ const EditProducteur = () => {
                 throw new Error('Erreur lors de la modification');
             }
         } catch (error) {
+            console.error('Submit error:', error);
             setSubmitMessage('Erreur: ' + (error.response?.data?.message || error.message));
         } finally {
             setIsSubmitting(false);
@@ -193,21 +226,7 @@ const EditProducteur = () => {
     };
 
     const handleCancel = () => {
-        setFormData({
-            refadh: 0,
-            nomadh: '',
-            cinadh: '',
-            adradh: '',
-            viladh: '',
-            teladh: '',
-            faxadh: '',
-            lier: '',
-            certif: '',
-            type: '',
-            nompro: '',
-            txtref: '',
-        });
-        setSubmitMessage('');
+        navigate("/producteur")
     };
 
     // Loading state
@@ -306,7 +325,20 @@ const EditProducteur = () => {
                                         placeholder="Entrez la référence de l'adhérent"
                                     />
                                 </div>
+                            </div>
 
+                            {/* Adherent Field - Added this field */}
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                    Adhérent <span className="text-red-500">*</span>
+                                </label>
+                                <input
+                                    type="text"
+                                    value={formData.adherent}
+                                    onChange={(e) => handleInputChange('adherent', e.target.value)}
+                                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none transition-all"
+                                    placeholder="Nom de l'adhérent"
+                                />
                             </div>
 
                             {/* Nom Producteur */}
@@ -448,6 +480,7 @@ const EditProducteur = () => {
                                     ))}
                                 </select>
                             </div>
+
                         </div>
 
                         {/* Action Buttons */}

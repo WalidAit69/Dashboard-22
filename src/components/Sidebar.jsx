@@ -61,14 +61,26 @@ const Sidebar = () => {
             {/* Mobile toggle button */}
             <button
                 onClick={toggleSidebar}
-                className={`fixed top-4 left-4 z-50 p-2 bg-white border border-gray-200 rounded-lg shadow-md hover:bg-gray-50 transition-all duration-200 flex lg:hidden items-center justify-center ${isSidebarOpen ? 'lg:left-64' : 'lg:left-4'
+                className={`fixed top-4 left-4 z-50 p-2 bg-white border border-gray-200 rounded-lg shadow-md hover:bg-gray-50 transition-all duration-200 hover:scale-105 active:scale-95 flex lg:hidden items-center justify-center ${isSidebarOpen ? 'lg:left-64' : 'lg:left-4'
                     }`}
+                aria-label="Toggle menu"
             >
-                {isSidebarOpen ? (
-                    <X className="w-5 h-5 text-gray-600" />
-                ) : (
-                    <Menu className="w-5 h-5 text-gray-600" />
-                )}
+                <div className="relative">
+                    <Menu
+                        size={20}
+                        className={`w-5 h-5 text-gray-600 transition-all duration-300 ${isSidebarOpen
+                            ? 'opacity-0 rotate-90 scale-0'
+                            : 'opacity-100 rotate-0 scale-100'
+                            }`}
+                    />
+                    <X
+                        size={20}
+                        className={`w-5 h-5 text-gray-600 absolute inset-0 transition-all duration-300 ${isSidebarOpen
+                            ? 'opacity-100 rotate-0 scale-100'
+                            : 'opacity-0 rotate-90 scale-0'
+                            }`}
+                    />
+                </div>
             </button>
 
             {/* Mobile overlay */}
@@ -183,6 +195,16 @@ const Sidebar = () => {
                             />
                         </Link>
 
+                        {/* Produit Section */}
+                        <Link to="/produit" onClick={closeSidebar}>
+                            <MenuItem
+                                icon={Package}
+                                label="Produit"
+                                isCollapsed={isCollapsed && !isHovered}
+                                isActive={isActive('/produit')}
+                            />
+                        </Link>
+
                         {/* Producteur Section */}
                         {(!isCollapsed || isHovered) && (
                             <>
@@ -269,57 +291,9 @@ const Sidebar = () => {
                                         />
                                     </Link>
                                 </DropdownSection>
-
-                                {/* Produit Section */}
-                                <MenuItem
-                                    icon={Package}
-                                    label="Produit"
-                                    hasSubmenu={true}
-                                    isExpanded={expandedSections.produit}
-                                    onClick={() => toggleSection('produit')}
-                                    isCollapsed={isCollapsed && !isHovered}
-                                />
-
-                                <DropdownSection isExpanded={expandedSections.produit} isCollapsed={isCollapsed && !isHovered}>
-                                    <Link to="/culture" onClick={closeSidebar}>
-                                        <MenuItem
-                                            icon={Leaf}
-                                            label="Culture"
-                                            isSubItem={true}
-                                            isActive={isActive('/culture')}
-                                            isCollapsed={isCollapsed && !isHovered}
-                                        />
-                                    </Link>
-                                    <Link to="/group-variete" onClick={closeSidebar}>
-                                        <MenuItem
-                                            icon={Layers}
-                                            label="Group variete"
-                                            isSubItem={true}
-                                            isActive={isActive('/group-variete')}
-                                            isCollapsed={isCollapsed && !isHovered}
-                                        />
-                                    </Link>
-                                    <Link to="/variete" onClick={closeSidebar}>
-                                        <MenuItem
-                                            icon={Package}
-                                            label="Variete"
-                                            isSubItem={true}
-                                            isActive={isActive('/variete')}
-                                            isCollapsed={isCollapsed && !isHovered}
-                                        />
-                                    </Link>
-                                    <Link to="/sous-variete" onClick={closeSidebar}>
-                                        <MenuItem
-                                            icon={Package}
-                                            label="Sous Variete"
-                                            isSubItem={true}
-                                            isActive={isActive('/sous-variete')}
-                                            isCollapsed={isCollapsed && !isHovered}
-                                        />
-                                    </Link>
-                                </DropdownSection>
                             </>
                         )}
+
 
                         {/* Collapsed state - show main icons only */}
                         {(isCollapsed && !isHovered) && (
@@ -334,15 +308,7 @@ const Sidebar = () => {
                                             showTooltip={true}
                                         />
                                     </Link>
-                                    <Link to="/culture" onClick={closeSidebar}>
-                                        <MenuItem
-                                            icon={Package}
-                                            label="Produit"
-                                            isActive={isActive('/culture')}
-                                            isCollapsed={true}
-                                            showTooltip={true}
-                                        />
-                                    </Link>
+
                                 </div>
                             </>
                         )}

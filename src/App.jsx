@@ -11,7 +11,6 @@ import DeclarationVerger from "./pages/Producteur/DeclarationVerger";
 import Base from "./pages/Producteur/Base";
 import PorteGreef from "./pages/Producteur/PorteGreef";
 import TypeProducteur from "./pages/Producteur/TypeProducteur";
-import Culture from "./pages/Produit/Culture";
 import GroupVariete from "./pages/Produit/GroupVariete";
 import Variete from "./pages/Produit/Variete";
 import SousVariete from "./pages/Produit/SousVariete";
@@ -20,6 +19,8 @@ import AddProducteur from "./pages/Producteur/producteur/AddProducteur";
 import Producteur from "./pages/Producteur/producteur/Producteur";
 import ProducteurDetail from "./pages/Producteur/producteur/ProducteurDetail";
 import EditProducteur from "./pages/Producteur/producteur/EditProducteur";
+import Culture from "./pages/Produit/Culture";
+import ProduitPage from "./pages/Produit/ProduitPage";
 
 function App() {
   return (
@@ -41,6 +42,7 @@ function App() {
               <Route path="/producteur/add" element={<AddProducteur />} />
               <Route path="/producteur/:id" element={<ProducteurDetail />} />
               <Route path="/producteur/edit/:id" element={<EditProducteur />} />
+
               <Route path="/verger" element={<Verger />} />
               <Route path="/parcelle" element={<Parcelle />} />
               <Route path="/protocole" element={<Protocole />} />
@@ -50,6 +52,7 @@ function App() {
               <Route path="/type-producteur" element={<TypeProducteur />} />
 
               {/* Produit routes */}
+              <Route path="/produit" element={<ProduitPage />} />
               <Route path="/culture" element={<Culture />} />
               <Route path="/group-variete" element={<GroupVariete />} />
               <Route path="/variete" element={<Variete />} />

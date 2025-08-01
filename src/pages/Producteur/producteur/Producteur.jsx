@@ -61,7 +61,7 @@ function Producteur() {
   };
 
   const analytics = calculateAnalytics();
-
+  
   // In a real application, you would compare with previous period data
   const getChangePercentage = (current, type) => {
 
