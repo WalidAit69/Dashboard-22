@@ -4,7 +4,6 @@ import Reception from "./pages/Reception";
 import Export from "./pages/Export";
 import Ecart from "./pages/Ecart";
 import GestionUtilisateur from "./pages/GestionUtilisateur";
-import Producteur from "./pages/Producteur/Producteur";
 import Verger from "./pages/Producteur/Verger";
 import Parcelle from "./pages/Producteur/Parcelle";
 import Protocole from "./pages/Producteur/Protocole";
@@ -17,7 +16,10 @@ import GroupVariete from "./pages/Produit/GroupVariete";
 import Variete from "./pages/Produit/Variete";
 import SousVariete from "./pages/Produit/SousVariete";
 import Sidebar from "./components/Sidebar";
-import AddProducteur from "./pages/Producteur/AddProducteur";
+import AddProducteur from "./pages/Producteur/producteur/AddProducteur";
+import Producteur from "./pages/Producteur/producteur/Producteur";
+import ProducteurDetail from "./pages/Producteur/producteur/ProducteurDetail";
+import EditProducteur from "./pages/Producteur/producteur/EditProducteur";
 
 function App() {
   return (
@@ -37,6 +39,8 @@ function App() {
               {/* Producteur routes */}
               <Route path="/producteur" element={<Producteur />} />
               <Route path="/producteur/add" element={<AddProducteur />} />
+              <Route path="/producteur/:id" element={<ProducteurDetail />} />
+              <Route path="/producteur/edit/:id" element={<EditProducteur />} />
               <Route path="/verger" element={<Verger />} />
               <Route path="/parcelle" element={<Parcelle />} />
               <Route path="/protocole" element={<Protocole />} />

@@ -1,5 +1,5 @@
-import AnalyticsCard from '../../components/dashboard/AnalyticsCard'
-import ProducteurTable from '../../components/producteur/ProducteurTable'
+import AnalyticsCard from '../../../components/dashboard/AnalyticsCard'
+import ProducteurTable from '../../../components/producteur/ProducteurTable'
 import { Users, UserCheck, Activity, Clock } from 'lucide-react';
 
 function Producteur() {

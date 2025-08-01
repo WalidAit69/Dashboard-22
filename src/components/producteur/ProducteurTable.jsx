@@ -1,360 +1,444 @@
-import { useState, useMemo } from 'react';
-import { ChevronDown, Download, Plus, Trash2, Eye, MoreHorizontal, ChevronLeft, ChevronRight } from 'lucide-react';
+import { useState, useMemo, useEffect } from 'react';
+import { ChevronDown, Download, Plus, Trash2, Eye, ChevronLeft, ChevronRight, Search, AlertCircle, Pen } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import API from "../../utils/Api";
+import Loader from '../ui/Loader';
+import ConfirmationModal from '../producteur/ConfirmationModal';
 
 const ProducteurTable = () => {
   const [searchTerm, setSearchTerm] = useState('');
-  const [roleFilter, setRoleFilter] = useState('');
-  const [planFilter, setPlanFilter] = useState('');
-  const [statusFilter, setStatusFilter] = useState('');
+  const [certifFilter, setCertifFilter] = useState('');
+  const [typeFilter, setTypeFilter] = useState('');
   const [itemsPerPage, setItemsPerPage] = useState(10);
   const [currentPage, setCurrentPage] = useState(1);
 
-  // Sample user data
-  const users = [
-    {
-      id: 1,
-      name: 'Zsazsa McCleverty',
-      email: 'zmccleverty@soundcloud.com',
-      avatar: 'ZM',
-      role: 'Maintainer',
-      roleIcon: '👤',
-      plan: 'Enterprise',
-      billing: 'Auto Debit',
-      status: 'Active'
-    },
-    {
-      id: 2,
-      name: 'Yoko Pottie',
-      email: 'ypottie@privacy.gov.au',
-      avatar: 'YP',
-      role: 'Subscriber',
-      roleIcon: '📧',
-      plan: 'Basic',
-      billing: 'Auto Debit',
-      status: 'Inactive'
-    },
-    {
-      id: 3,
-      name: 'Wesley Burland',
-      email: 'wburland@utexas.edu',
-      avatar: 'WB',
-      role: 'Editor',
-      roleIcon: '⏰',
-      plan: 'Team',
-      billing: 'Auto Debit',
-      status: 'Inactive'
-    },
-    {
-      id: 4,
-      name: 'Vladamir Koschek',
-      email: 'vkoschek17@abc.net.au',
-      avatar: 'VK',
-      role: 'Author',
-      roleIcon: '✏️',
-      plan: 'Team',
-      billing: 'Manual - Paypal',
-      status: 'Active'
-    },
-    {
-      id: 5,
-      name: 'Tyne Widmore',
-      email: 'twidmore12@gravatar.com',
-      avatar: 'TW',
-      role: 'Subscriber',
-      roleIcon: '📧',
-      plan: 'Team',
-      billing: 'Manual - Cash',
-      status: 'Pending'
-    },
-    {
-      id: 6,
-      name: 'Travus Bruntjen',
-      email: 'tbruntjen@sitemeter.com',
-      avatar: 'TB',
-      role: 'Admin',
-      roleIcon: '🛡️',
-      plan: 'Enterprise',
-      billing: 'Manual - Cash',
-      status: 'Active'
-    },
-    {
-      id: 7,
-      name: 'Stu Delamaine',
-      email: 'sdelamaine@who.int',
-      avatar: 'SD',
-      role: 'Author',
-      roleIcon: '✏️',
-      plan: 'Basic',
-      billing: 'Auto Debit',
-      status: 'Pending'
-    },
-    {
-      id: 8,
-      name: 'Saunder Offner',
-      email: 'soffner19@mac.com',
-      avatar: 'SO',
-      role: 'Maintainer',
-      roleIcon: '👤',
-      plan: 'Enterprise',
-      billing: 'Auto Debit',
-      status: 'Pending'
-    },
-    {
-      id: 9,
-      name: 'Stephen MacGilfoyle',
-      email: 'smacgilfoyle@bigcartel.com',
-      avatar: 'SM',
-      role: 'Maintainer',
-      roleIcon: '👤',
-      plan: 'Company',
-      billing: 'Manual - Paypal',
-      status: 'Pending'
-    },
-    {
-      id: 10,
-      name: 'Skip Hebblethwaite',
-      email: 'shebblethwaite@arizona.edu',
-      avatar: 'SH',
-      role: 'Admin',
-      roleIcon: '🛡️',
-      plan: 'Company',
-      billing: 'Manual - Cash',
-      status: 'Inactive'
+  // State for data management
+  const [adherents, setAdherents] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [retryCount, setRetryCount] = useState(0);
+
+  // State for delete modal
+  const [deleteModal, setDeleteModal] = useState({
+    isOpen: false,
+    adherent: null,
+    loading: false
+  });
+
+  const GetData = async (showLoading = true) => {
+    try {
+      if (showLoading) setLoading(true);
+      setError(null);
+
+      const res = await API.get("/Adherents");
+
+      // Assuming the API returns an array of adherents
+      if (res.data && Array.isArray(res.data)) {
+        setAdherents(res.data);
+      } else {
+        // Handle case where data structure is different
+        setAdherents(res.data ? [res.data] : []);
+      }
+
+      setRetryCount(0); // Reset retry count on success
+    } catch (error) {
+      console.error('Error fetching adherents:', error);
+      setError({
+        message: error.response?.data?.message || error.message || 'Failed to fetch data',
+        status: error.response?.status,
+        canRetry: error.response?.status !== 404
+      });
+    } finally {
+      if (showLoading) setLoading(false);
     }
-  ];
+  };
+
+  // Delete adherent function
+  const handleDelete = async () => {
+    setDeleteModal(prev => ({ ...prev, loading: true }));
+
+    try {
+      await API.delete(`/Adherents/${deleteModal.adherent.refadh}`);
+
+      // Remove from local state
+      setAdherents(prev => prev.filter(item => item.refadh !== deleteModal.adherent.refadh));
+
+      // Close modal
+      setDeleteModal({ isOpen: false, adherent: null, loading: false });
+
+      // Optional: Show success message
+      // You can add a toast notification here
+
+    } catch (error) {
+      console.error('Error deleting adherent:', error);
+      setDeleteModal(prev => ({ ...prev, loading: false }));
+
+      // Optional: Show error message
+      // You can add error handling/toast here
+    }
+  };
+
+  // Open delete modal
+  const openDeleteModal = (adherent) => {
+    setDeleteModal({
+      isOpen: true,
+      adherent: adherent,
+      loading: false
+    });
+  };
+
+  // Close delete modal
+  const closeDeleteModal = () => {
+    if (!deleteModal.loading) {
+      setDeleteModal({
+        isOpen: false,
+        adherent: null,
+        loading: false
+      });
+    }
+  };
+
+  // Retry function
+  const handleRetry = () => {
+    setRetryCount(prev => prev + 1);
+    GetData();
+  };
+
+  // Auto-refresh function
+  const handleRefresh = () => {
+    GetData(false); // Refresh without showing full loading state
+  };
+
+  useEffect(() => {
+    GetData();
+  }, []);
 
   // Filter and search logic
-  const filteredUsers = useMemo(() => {
-    return users.filter(user => {
-      const matchesSearch = user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                           user.email.toLowerCase().includes(searchTerm.toLowerCase());
-      const matchesRole = !roleFilter || user.role === roleFilter;
-      const matchesPlan = !planFilter || user.plan === planFilter;
-      const matchesStatus = !statusFilter || user.status === statusFilter;
-      
-      return matchesSearch && matchesRole && matchesPlan && matchesStatus;
+  const filteredAdherents = useMemo(() => {
+    if (!adherents.length) return [];
+
+    return adherents.filter(adherent => {
+      const matchesSearch =
+        (adherent.nomadh?.toLowerCase().includes(searchTerm.toLowerCase()) || '') ||
+        (adherent.nompro?.toLowerCase().includes(searchTerm.toLowerCase()) || '') ||
+        (adherent.cinadh?.toLowerCase().includes(searchTerm.toLowerCase()) || '') ||
+        (adherent.viladh?.toLowerCase().includes(searchTerm.toLowerCase()) || '') ||
+        (adherent.teladh?.toLowerCase().includes(searchTerm.toLowerCase()) || '');
+
+      const matchesCertif = !certifFilter || adherent.certif === certifFilter;
+      const matchesType = !typeFilter || adherent.type === typeFilter;
+
+      return matchesSearch && matchesCertif && matchesType;
     });
-  }, [users, searchTerm, roleFilter, planFilter, statusFilter]);
+  }, [adherents, searchTerm, certifFilter, typeFilter]);
 
   // Pagination logic
-  const totalPages = Math.ceil(filteredUsers.length / itemsPerPage);
+  const totalPages = Math.ceil(filteredAdherents.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
-  const paginatedUsers = filteredUsers.slice(startIndex, startIndex + itemsPerPage);
+  const paginatedAdherents = filteredAdherents.slice(startIndex, startIndex + itemsPerPage);
 
   // Get unique values for filters
-  const roles = [...new Set(users.map(user => user.role))];
-  const plans = [...new Set(users.map(user => user.plan))];
-  const statuses = [...new Set(users.map(user => user.status))];
+  const certifOptions = [...new Set(adherents.map(adherent => adherent.certif).filter(Boolean))];
+  const typeOptions = [...new Set(adherents.map(adherent => adherent.type).filter(Boolean))];
 
-  const getStatusBadge = (status) => {
-    const statusStyles = {
-      Active: 'bg-green-100 text-green-800',
-      Inactive: 'bg-gray-100 text-gray-800',
-      Pending: 'bg-yellow-100 text-yellow-800'
+  const getCertifBadge = (certif) => {
+    const certifStyles = {
+      'OUI': 'bg-green-100 text-green-800',
+      'NON': 'bg-red-100 text-red-800',
     };
-    return statusStyles[status] || 'bg-gray-100 text-gray-800';
+    return certifStyles[certif] || 'bg-gray-100 text-gray-800';
   };
 
   const getAvatarColor = (name) => {
     const colors = [
-      'bg-blue-500', 'bg-green-500', 'bg-yellow-500', 'bg-red-500', 
+      'bg-primary-500', 'bg-green-500', 'bg-yellow-500', 'bg-red-500',
       'bg-purple-500', 'bg-pink-500', 'bg-indigo-500', 'bg-teal-500'
     ];
-    return colors[name.charCodeAt(0) % colors.length];
+    return colors[(name?.charCodeAt(0) || 0) % colors.length];
   };
 
-  return (
-    <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-      {/* Search Filters */}
-      <div className="p-6 border-b border-gray-200">
-        <h2 className="text-lg font-medium text-gray-900 mb-4">Search Filters</h2>
-        
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-          {/* Role Filter */}
-          <div className="relative">
-            <select
-              value={roleFilter}
-              onChange={(e) => setRoleFilter(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-200 rounded-lg bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent appearance-none"
-            >
-              <option value="">Select Role</option>
-              {roles.map(role => (
-                <option key={role} value={role}>{role}</option>
-              ))}
-            </select>
-            <ChevronDown className="absolute right-3 top-3 w-4 h-4 text-gray-400 pointer-events-none" />
-          </div>
+  const formatDate = (dateString) => {
+    if (!dateString) return 'N/A';
+    try {
+      return new Date(dateString).toLocaleDateString('fr-FR');
+    } catch {
+      return dateString;
+    }
+  };
 
-          {/* Plan Filter */}
-          <div className="relative">
-            <select
-              value={planFilter}
-              onChange={(e) => setPlanFilter(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-200 rounded-lg bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent appearance-none"
-            >
-              <option value="">Select Plan</option>
-              {plans.map(plan => (
-                <option key={plan} value={plan}>{plan}</option>
-              ))}
-            </select>
-            <ChevronDown className="absolute right-3 top-3 w-4 h-4 text-gray-400 pointer-events-none" />
-          </div>
+  // Loading state
+  if (loading) {
+    return (
+      <Loader />
+    );
+  }
 
-          {/* Status Filter */}
-          <div className="relative">
-            <select
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-200 rounded-lg bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent appearance-none"
+  // Error state
+  if (error) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <div className="text-center max-w-md">
+          <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
+          <h3 className="text-lg font-medium text-gray-900 mb-2">Erreur de chargement</h3>
+          <p className="text-gray-500 mb-4">{error.message}</p>
+          {error.status && (
+            <p className="text-sm text-gray-400 mb-4">Code d'erreur: {error.status}</p>
+          )}
+          {error.canRetry && (
+            <button
+              onClick={handleRetry}
+              className="px-4 py-2 bg-primary-500 text-white rounded-lg hover:bg-primary-600 transition-colors"
+              disabled={retryCount >= 3}
             >
-              <option value="">Select Status</option>
-              {statuses.map(status => (
-                <option key={status} value={status}>{status}</option>
-              ))}
-            </select>
-            <ChevronDown className="absolute right-3 top-3 w-4 h-4 text-gray-400 pointer-events-none" />
-          </div>
+              {retryCount >= 3 ? 'Trop de tentatives' : 'Réessayer'}
+            </button>
+          )}
         </div>
+      </div>
+    );
+  }
 
-        {/* Items per page and search/actions */}
-        <div className="flex flex-col flex-wrap sm:flex-row justify-between items-start sm:items-center gap-4">
-          <div className="relative">
-            <select
-              value={itemsPerPage}
-              onChange={(e) => {
-                setItemsPerPage(Number(e.target.value));
-                setCurrentPage(1);
-              }}
-              className="px-4 py-2 border border-gray-200 rounded-lg bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent appearance-none pr-10"
-            >
-              <option value={5}>5</option>
-              <option value={10}>10</option>
-              <option value={25}>25</option>
-              <option value={50}>50</option>
-            </select>
-            <ChevronDown className="absolute right-3 top-3 w-4 h-4 text-gray-400 pointer-events-none" />
+  return (
+    <>
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+        {/* Header */}
+        <div className="p-6 border-b border-gray-200">
+          {/* Filters */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+            {/* Certification Filter */}
+            <div className="relative">
+              <select
+                value={certifFilter}
+                onChange={(e) => setCertifFilter(e.target.value)}
+                className="w-full px-4 py-2 border border-gray-200 rounded-lg bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent appearance-none"
+              >
+                <option value="">Toutes les certifications</option>
+                {certifOptions.map(certif => (
+                  <option key={certif} value={certif}>{certif}</option>
+                ))}
+              </select>
+              <ChevronDown className="absolute right-3 top-3 w-4 h-4 text-gray-400 pointer-events-none" />
+            </div>
+
+            {/* Type Filter */}
+            <div className="relative">
+              <select
+                value={typeFilter}
+                onChange={(e) => setTypeFilter(e.target.value)}
+                className="w-full px-4 py-2 border border-gray-200 rounded-lg bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent appearance-none"
+              >
+                <option value="">Tous les types</option>
+                {typeOptions.map(type => (
+                  <option key={type} value={type}>{type}</option>
+                ))}
+              </select>
+              <ChevronDown className="absolute right-3 top-3 w-4 h-4 text-gray-400 pointer-events-none" />
+            </div>
           </div>
 
-          <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
-            <input
-              type="text"
-              placeholder="Search User"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent w-full sm:w-64"
-            />
-            <div className="flex gap-2">
-              <button className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors flex items-center gap-2">
-                <Download className="w-4 h-4" />
-                Export
-              </button>
-              <Link to={"/producteur/add"} className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2">
-                <Plus className="w-4 h-4" />
-                Add New User
-              </Link>
+          {/* Search and Actions */}
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+            <div className="relative">
+              <select
+                value={itemsPerPage}
+                onChange={(e) => {
+                  setItemsPerPage(Number(e.target.value));
+                  setCurrentPage(1);
+                }}
+                className="px-4 py-2 border border-gray-200 rounded-lg bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent appearance-none pr-10"
+              >
+                <option value={5}>5</option>
+                <option value={10}>10</option>
+                <option value={25}>25</option>
+                <option value={50}>50</option>
+              </select>
+              <ChevronDown className="absolute right-3 top-3 w-4 h-4 text-gray-400 pointer-events-none" />
+            </div>
+
+            <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+              <div className="relative">
+                <Search className="absolute left-3 top-3 w-4 h-4 text-gray-400" />
+                <input
+                  type="text"
+                  placeholder="Rechercher un producteur..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent w-full sm:w-64"
+                />
+              </div>
+              <div className="flex gap-2">
+                <button className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors flex items-center gap-2">
+                  <Download className="w-4 h-4" />
+                  Exporter
+                </button>
+                <Link to={"/producteur/add"} className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors flex items-center gap-2">
+                  <Plus className="w-4 h-4" />
+                  Nouveau Producteur
+                </Link>
+              </div>
             </div>
           </div>
         </div>
-      </div>
 
-      {/* Table */}
-      <div className="overflow-x-auto">
-        <table className="w-full">
-          <thead className="bg-gray-50 border-b border-gray-200">
-            <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">USER</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ROLE</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">PLAN</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">BILLING</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">STATUS</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ACTIONS</th>
-            </tr>
-          </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
-            {paginatedUsers.map((user) => (
-              <tr key={user.id} className="hover:bg-gray-50">
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="flex items-center">
-                    <div className={`w-8 h-8 rounded-full ${getAvatarColor(user.name)} flex items-center justify-center text-white text-sm font-medium mr-3`}>
-                      {user.avatar}
-                    </div>
-                    <div>
-                      <div className="text-sm font-medium text-gray-900">{user.name}</div>
-                      <div className="text-sm text-gray-500">{user.email}</div>
-                    </div>
-                  </div>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="flex items-center">
-                    <span className="mr-2">{user.roleIcon}</span>
-                    <span className="text-sm text-gray-900">{user.role}</span>
-                  </div>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{user.plan}</td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{user.billing}</td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${getStatusBadge(user.status)}`}>
-                    {user.status}
-                  </span>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  <div className="flex items-center space-x-2">
-                    <button className="text-gray-400 hover:text-red-600 transition-colors">
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                    <button className="text-gray-400 hover:text-blue-600 transition-colors">
-                      <Eye className="w-4 h-4" />
-                    </button>
-                    <button className="text-gray-400 hover:text-gray-600 transition-colors">
-                      <MoreHorizontal className="w-4 h-4" />
-                    </button>
-                  </div>
-                </td>
+        {/* Table */}
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead className="bg-gray-50 border-b border-gray-200">
+              <tr>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">PRODUCTEUR</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">CIN/IR</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">VILLE</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">CONTACT</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">CERTIFIÉ</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">TYPE</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ACTIONS</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
+              {paginatedAdherents.length === 0 ? (
+                <tr>
+                  <td colSpan="7" className="px-6 py-12 text-center text-gray-500">
+                    {filteredAdherents.length === 0 && adherents.length > 0
+                      ? "Aucun résultat trouvé pour votre recherche"
+                      : "Aucun producteur trouvé"}
+                  </td>
+                </tr>
+              ) : (
+                paginatedAdherents.map((adherent) => (
+                  <tr key={adherent.refadh} className="hover:bg-gray-50">
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="flex items-center">
+                        <div className={`w-8 h-8 rounded-full ${getAvatarColor(adherent.nomadh)} flex items-center justify-center text-white text-sm font-medium mr-3`}>
+                          {adherent.nomadh?.substring(0, 2).toUpperCase() || '??'}
+                        </div>
+                        <div>
+                          <div className="text-sm font-medium text-gray-900">{adherent.nomadh || 'N/A'}</div>
+                          <div className="text-sm text-gray-500">{adherent.nompro || 'N/A'}</div>
+                          <div className="text-xs text-gray-400">Réf: {adherent.refadh}</div>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      {adherent.cinadh || 'N/A'}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm text-gray-900">{adherent.viladh || 'N/A'}</div>
+                      <div className="text-sm text-gray-500">{adherent.adradh || ''}</div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm text-gray-900">{adherent.teladh || 'N/A'}</div>
+                      {adherent.faxadh && (
+                        <div className="text-sm text-gray-500">Fax: {adherent.faxadh}</div>
+                      )}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${getCertifBadge(adherent.certif)}`}>
+                        {adherent.certif || 'N/A'}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      {adherent.type || 'N/A'}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      <div className="flex items-center space-x-2">
+                        <Link
+                          to={`/producteur/${adherent.refadh}`}
+                          className="text-gray-400 hover:text-primary-600 transition-colors"
+                          title="Voir les détails"
+                        >
+                          <Eye className="w-4 h-4" />
+                        </Link>
+                        <button
+                          onClick={() => openDeleteModal(adherent)}
+                          className="text-gray-400 hover:text-red-600 transition-colors"
+                          title="Supprimer"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                        <Link
+                          to={`/producteur/edit/${adherent.refadh}`}
+                          className="text-gray-400 hover:text-gray-600 transition-colors"
+                          title="Modifier"
+                        >
+                          <Pen className="w-4 h-4" />
+                        </Link>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+
+        {/* Pagination */}
+        {totalPages > 1 && (
+          <div className="px-6 py-3 border-t border-gray-200 flex items-center justify-between bg-gray-50">
+            <div className="text-sm text-gray-500">
+              Affichage de {startIndex + 1} à {Math.min(startIndex + itemsPerPage, filteredAdherents.length)} sur {filteredAdherents.length} entrées
+            </div>
+            <div className="flex items-center space-x-2">
+              <button
+                onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                disabled={currentPage === 1}
+                className="p-2 rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </button>
+
+              {[...Array(Math.min(totalPages, 5))].map((_, i) => {
+                let pageNum;
+                if (totalPages <= 5) {
+                  pageNum = i + 1;
+                } else if (currentPage <= 3) {
+                  pageNum = i + 1;
+                } else if (currentPage >= totalPages - 2) {
+                  pageNum = totalPages - 4 + i;
+                } else {
+                  pageNum = currentPage - 2 + i;
+                }
+
+                return (
+                  <button
+                    key={pageNum}
+                    onClick={() => setCurrentPage(pageNum)}
+                    className={`px-3 py-2 rounded-lg text-sm font-medium ${currentPage === pageNum
+                      ? 'bg-primary-600 text-white'
+                      : 'text-gray-500 hover:bg-gray-100'
+                      }`}
+                  >
+                    {pageNum}
+                  </button>
+                );
+              })}
+
+              <button
+                onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                disabled={currentPage === totalPages}
+                className="p-2 rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
-      {/* Pagination */}
-      <div className="px-6 py-3 border-t border-gray-200 flex items-center justify-between bg-gray-50">
-        <div className="text-sm text-gray-500">
-          Showing {startIndex + 1} to {Math.min(startIndex + itemsPerPage, filteredUsers.length)} of {filteredUsers.length} entries
-        </div>
-        <div className="flex items-center space-x-2">
-          <button
-            onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-            disabled={currentPage === 1}
-            className="p-2 rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            <ChevronLeft className="w-4 h-4" />
-          </button>
-          
-          {[...Array(totalPages)].map((_, i) => (
-            <button
-              key={i + 1}
-              onClick={() => setCurrentPage(i + 1)}
-              className={`px-3 py-2 rounded-lg text-sm font-medium ${
-                currentPage === i + 1
-                  ? 'bg-blue-600 text-white'
-                  : 'text-gray-500 hover:bg-gray-100'
-              }`}
-            >
-              {i + 1}
-            </button>
-          ))}
-          
-          <button
-            onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-            disabled={currentPage === totalPages}
-            className="p-2 rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            <ChevronRight className="w-4 h-4" />
-          </button>
-        </div>
-      </div>
-    </div>
+      {/* Delete Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={deleteModal.isOpen}
+        onClose={closeDeleteModal}
+        onConfirm={handleDelete}
+        title="Confirmer la suppression"
+        message="Êtes-vous sûr de vouloir supprimer le producteur {itemName} ? Cette action est irréversible."
+        itemName={deleteModal.adherent?.nomadh}
+        confirmText="Supprimer"
+        cancelText="Annuler"
+        loading={deleteModal.loading}
+        loadingText="Suppression..."
+        type="danger"
+      />
+    </>
   );
 };
 
