@@ -5,7 +5,7 @@ import API from "../../utils/Api";
 import Loader from '../ui/Loader';
 import ConfirmationModal from '../producteur/ConfirmationModal';
 
-const ProducteurTable = () => {
+const ProducteurTable = ({ initialData = [], onRefresh }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [certifFilter, setCertifFilter] = useState('');
   const [typeFilter, setTypeFilter] = useState('');
@@ -13,8 +13,8 @@ const ProducteurTable = () => {
   const [currentPage, setCurrentPage] = useState(1);
 
   // State for data management
-  const [adherents, setAdherents] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [adherents, setAdherents] = useState(initialData);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [retryCount, setRetryCount] = useState(0);
 
@@ -24,6 +24,11 @@ const ProducteurTable = () => {
     adherent: null,
     loading: false
   });
+
+  // Update adherents when initialData changes
+  useEffect(() => {
+    setAdherents(initialData);
+  }, [initialData]);
 
   const GetData = async (showLoading = true) => {
     try {
@@ -35,6 +40,10 @@ const ProducteurTable = () => {
       // Assuming the API returns an array of adherents
       if (res.data && Array.isArray(res.data)) {
         setAdherents(res.data);
+        // Call onRefresh if provided to update parent component
+        if (onRefresh) {
+          onRefresh();
+        }
       } else {
         // Handle case where data structure is different
         setAdherents(res.data ? [res.data] : []);
@@ -65,6 +74,11 @@ const ProducteurTable = () => {
 
       // Close modal
       setDeleteModal({ isOpen: false, adherent: null, loading: false });
+
+      // Call onRefresh if provided to update parent component analytics
+      if (onRefresh) {
+        onRefresh();
+      }
 
       // Optional: Show success message
       // You can add a toast notification here
@@ -109,9 +123,12 @@ const ProducteurTable = () => {
     GetData(false); // Refresh without showing full loading state
   };
 
+  // Only fetch data if no initial data is provided
   useEffect(() => {
-    GetData();
-  }, []);
+    if (!initialData.length) {
+      GetData();
+    }
+  }, [initialData.length]);
 
   // Filter and search logic
   const filteredAdherents = useMemo(() => {
@@ -166,15 +183,15 @@ const ProducteurTable = () => {
     }
   };
 
-  // Loading state
-  if (loading) {
+  // Loading state - only show if we're loading and don't have initial data
+  if (loading && !adherents.length) {
     return (
       <Loader />
     );
   }
 
   // Error state
-  if (error) {
+  if (error && !adherents.length) {
     return (
       <div className="flex items-center justify-center py-12">
         <div className="text-center max-w-md">

@@ -56,7 +56,7 @@ function Dashboard() {
             </div>
 
             <div className='sm:p-6'>
-                <UserManagementTable />
+                {/* <UserManagementTable /> */}
             </div>
         </div>
     )
