@@ -1,7 +1,9 @@
 import { useState } from 'react';
-import { Truck, Store, Leaf, Layers, Package, Menu, X } from 'lucide-react';
+import { Leaf, Layers, Package, Menu, X } from 'lucide-react';
 import Culture from './Culture';
 import GroupVariete from './GroupVariete';
+import SousVariete from './SousVariete';
+import Variete from './Variete';
 
 function ProduitPage() {
     const [activeTab, setActiveTab] = useState('culture');
@@ -24,6 +26,10 @@ function ProduitPage() {
                 return <Culture />;
             case 'GroupVariete':
                 return <GroupVariete />;
+            case 'Variete':
+                return <Variete />;
+            case 'SousVariete':
+                return <SousVariete />;
             default:
                 return (
                     <div className="p-4 sm:p-6">
@@ -103,7 +109,7 @@ function ProduitPage() {
             </div>
 
             {/* Desktop Layout */}
-            <div className="max-w-7xl mx-auto flex">
+            <div className="max-w-7xl mx-auto flex items-start">
                 {/* Desktop Sidebar */}
                 <div className="hidden lg:block w-64 min-h-screen">
                     <div className="p-6">
@@ -141,7 +147,7 @@ function ProduitPage() {
                 </div>
 
                 {/* Main Content */}
-                <div className="flex-1">
+                <div className="flex-1 bg-white shadow-soft rounded-xl">
                     {renderContent()}
                 </div>
             </div>

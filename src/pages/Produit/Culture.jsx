@@ -16,6 +16,11 @@ function Culture() {
   const [submitting, setSubmitting] = useState(false);
   const [checkingCode, setCheckingCode] = useState(false);
 
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage] = useState(10);
+  const [totalPages, setTotalPages] = useState(1);
+  const [paginatedCultures, setPaginatedCultures] = useState([]);
+
   // Récupérer les données
   const fetchData = async () => {
     try {
@@ -234,6 +239,43 @@ function Culture() {
     }
   };
 
+  // Pagination Functions
+  useEffect(() => {
+    // Calculate pagination whenever cultures changes
+    const total = Math.ceil(cultures.length / itemsPerPage);
+    setTotalPages(total);
+
+    // Reset to page 1 if current page is beyond total pages
+    if (currentPage > total && total > 0) {
+      setCurrentPage(1);
+    }
+  }, [cultures, itemsPerPage, currentPage]);
+
+  // handle paginated data
+  useEffect(() => {
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    setPaginatedCultures(cultures.slice(startIndex, endIndex));
+  }, [cultures, currentPage, itemsPerPage]);
+
+  const goToPage = (page) => {
+    if (page >= 1 && page <= totalPages) {
+      setCurrentPage(page);
+    }
+  };
+
+  const goToPrevious = () => {
+    if (currentPage > 1) {
+      setCurrentPage(currentPage - 1);
+    }
+  };
+
+  const goToNext = () => {
+    if (currentPage < totalPages) {
+      setCurrentPage(currentPage + 1);
+    }
+  };
+
   // Rendre le contenu du modal selon le mode
   const renderModalContent = () => {
     if (modalMode === 'delete') {
@@ -443,7 +485,7 @@ function Culture() {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {cultures.length === 0 ? (
+                {paginatedCultures.length === 0 ? (
                   <tr>
                     <td colSpan="3" className="px-6 py-12 text-center text-gray-500">
                       <div className="flex flex-col items-center gap-2">
@@ -458,7 +500,7 @@ function Culture() {
                     </td>
                   </tr>
                 ) : (
-                  cultures.map((culture, index) => (
+                  paginatedCultures.map((culture, index) => (
                     <tr key={culture.codcul || index} className="hover:bg-gray-50">
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                         {culture.codcul}
@@ -493,7 +535,7 @@ function Culture() {
 
           {/* Version mobile - cartes */}
           <div className="sm:hidden">
-            {cultures.length === 0 ? (
+            {paginatedCultures.length === 0 ? (
               <div className="p-6 text-center text-gray-500">
                 <div className="flex flex-col items-center gap-3">
                   <p>Aucune culture trouvée</p>
@@ -507,7 +549,7 @@ function Culture() {
               </div>
             ) : (
               <div className="divide-y divide-gray-200">
-                {cultures.map((culture, index) => (
+                {paginatedCultures.map((culture, index) => (
                   <div key={culture.codcul || index} className="p-4 hover:bg-gray-50 active:bg-gray-100 transition-colors">
                     <div className="flex justify-between items-start gap-3">
                       <div className="flex-1 min-w-0">
@@ -543,6 +585,81 @@ function Culture() {
                 ))}
               </div>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* Pagination */}
+      {!loading && !error && cultures.length > 0 && (
+        <div className="mt-6 flex flex-col sm:flex-row justify-between items-center gap-4">
+          <div className="sm:text-sm text-xs text-gray-700">
+            Affichage de {((currentPage - 1) * itemsPerPage) + 1} à {Math.min(currentPage * itemsPerPage, cultures.length)} sur {cultures.length} résultats
+          </div>
+
+          <div className="flex items-center gap-2">
+            <button
+              onClick={goToPrevious}
+              disabled={currentPage === 1}
+              className="px-2 sm:px-3 py-2 text-xs sm:text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <span className="hidden sm:inline">Précédent</span>
+              <span className="sm:hidden">Préc</span>
+            </button>
+
+            <div className="flex gap-1">
+              {[...Array(totalPages)].map((_, index) => {
+                const page = index + 1;
+                const isCurrentPage = page === currentPage;
+
+                // Mobile: Show fewer pages (current + 1 adjacent)
+                // Desktop: Show more pages (current + 2 adjacent)
+                const isMobile = window.innerWidth < 640; // sm breakpoint
+                const adjacentPages = isMobile ? 1 : 2;
+
+                // Always show first page, last page, current page and adjacent pages
+                if (
+                  page === 1 ||
+                  page === totalPages ||
+                  (page >= currentPage - adjacentPages && page <= currentPage + adjacentPages)
+                ) {
+                  return (
+                    <button
+                      key={page}
+                      onClick={() => goToPage(page)}
+                      className={`px-2 sm:px-3 py-2 text-xs sm:text-sm font-medium rounded-lg ${isCurrentPage
+                        ? 'text-white bg-primary-600 border border-primary-600'
+                        : 'text-gray-500 bg-white border border-gray-300 hover:bg-gray-50'
+                        }`}
+                    >
+                      {page}
+                    </button>
+                  );
+                }
+
+                // Show ellipsis for gaps
+                if (
+                  (page === currentPage - adjacentPages - 1 && page > 1) ||
+                  (page === currentPage + adjacentPages + 1 && page < totalPages)
+                ) {
+                  return (
+                    <span key={page} className="px-2 sm:px-3 py-2 text-xs sm:text-sm text-gray-500">
+                      ...
+                    </span>
+                  );
+                }
+
+                return null;
+              })}
+            </div>
+
+            <button
+              onClick={goToNext}
+              disabled={currentPage === totalPages}
+              className="px-2 sm:px-3 py-2 text-xs sm:text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <span className="hidden sm:inline">Suivant</span>
+              <span className="sm:hidden">Suiv</span>
+            </button>
           </div>
         </div>
       )}

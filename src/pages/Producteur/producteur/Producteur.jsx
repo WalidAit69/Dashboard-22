@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import AnalyticsCard from '../../../components/dashboard/AnalyticsCard'
 import ProducteurTable from '../../../components/producteur/ProducteurTable'
-import { Users, UserCheck, Activity, Clock } from 'lucide-react';
+import { Users, UserCheck, UserX, Calendar } from 'lucide-react';
 import API from "../../../utils/Api";
 import Loader from '../../../components/ui/Loader';
 
@@ -42,34 +42,41 @@ function Producteur() {
   const calculateAnalytics = () => {
     if (!adherents.length) {
       return {
-        nonAdherent: 0,
+        total: 0,
         adherent: 0,
-        achat: 0,
-        presta: 0,
-        total: 0
+        nonAdherent: 0,
+        recentUsers: 0
       };
     }
 
+    // Calculate date 2 months ago
+    const today = new Date();
+    const twoMonthsAgo = new Date(today.getFullYear(), today.getMonth() - 2, today.getDate());
+
     // Count by type
-    const nonAdherent = adherents.filter(item => item.type === 'Non Adherent').length;
     const adherent = adherents.filter(item => item.type === 'Adherent').length;
-    const achat = adherents.filter(item => item.type === 'Achat').length;
-    const presta = adherents.filter(item => item.type === 'PRESTA').length;
+    const nonAdherent = adherents.filter(item => item.type === 'Non Adherent').length;
     const total = adherents.length;
 
-    return { nonAdherent, adherent, achat, presta, total };
+    // Count users created in last 2 months
+    const recentUsers = adherents.filter(item => {
+      if (!item.dtadd) return false;
+      const userDate = new Date(item.dtadd);
+      return userDate >= twoMonthsAgo;
+    }).length;
+
+    return { total, adherent, nonAdherent, recentUsers };
   };
 
   const analytics = calculateAnalytics();
-  
+
   // In a real application, you would compare with previous period data
   const getChangePercentage = (current, type) => {
-
     const mockPrevious = {
-      nonAdherent: Math.max(1, Math.floor(current * 0.8)),
+      total: Math.max(1, Math.floor(current * 0.85)),
       adherent: Math.max(1, Math.floor(current * 0.9)),
-      achat: Math.max(1, Math.floor(current * 0.85)),
-      presta: Math.max(1, Math.floor(current * 0.75))
+      nonAdherent: Math.max(1, Math.floor(current * 0.8)),
+      recentUsers: Math.max(1, Math.floor(current * 0.7))
     };
 
     const previous = mockPrevious[type] || 1;
@@ -79,44 +86,44 @@ function Producteur() {
 
   const cards = [
     {
-      title: "Non Adhérent",
-      value: analytics.nonAdherent.toLocaleString(),
-      change: getChangePercentage(analytics.nonAdherent, 'nonAdherent'),
-      subtitle: "Producteurs non adhérents",
+      title: "Total Utilisateurs",
+      value: analytics.total.toLocaleString(),
+      change: getChangePercentage(analytics.total, 'total'),
+      subtitle: "Nombre total d'utilisateurs",
       icon: Users,
-      iconBg: "bg-gray-100",
-      iconColor: "text-gray-600",
-      changeColor: analytics.nonAdherent > 0 ? "text-green-600" : "text-gray-500"
+      iconBg: "bg-blue-100",
+      iconColor: "text-blue-600",
+      changeColor: analytics.total > 0 ? "text-green-600" : "text-gray-500"
     },
     {
-      title: "Adhérent",
+      title: "Adhérents",
       value: analytics.adherent.toLocaleString(),
       change: getChangePercentage(analytics.adherent, 'adherent'),
-      subtitle: "Producteurs adhérents",
+      subtitle: "Utilisateurs adhérents",
       icon: UserCheck,
       iconBg: "bg-green-100",
       iconColor: "text-green-600",
       changeColor: analytics.adherent > 0 ? "text-green-600" : "text-gray-500"
     },
     {
-      title: "Achat",
-      value: analytics.achat.toLocaleString(),
-      change: getChangePercentage(analytics.achat, 'achat'),
-      subtitle: "Type Achat",
-      icon: Activity,
-      iconBg: "bg-blue-100",
-      iconColor: "text-blue-600",
-      changeColor: analytics.achat > 0 ? "text-green-600" : "text-gray-500"
+      title: "Non Adhérents",
+      value: analytics.nonAdherent.toLocaleString(),
+      change: getChangePercentage(analytics.nonAdherent, 'nonAdherent'),
+      subtitle: "Utilisateurs non adhérents",
+      icon: UserX,
+      iconBg: "bg-red-100",
+      iconColor: "text-red-600",
+      changeColor: analytics.nonAdherent > 0 ? "text-green-600" : "text-gray-500"
     },
     {
-      title: "PRESTA",
-      value: analytics.presta.toLocaleString(),
-      change: getChangePercentage(analytics.presta, 'presta'),
-      subtitle: "Type Prestation",
-      icon: Clock,
-      iconBg: "bg-yellow-100",
-      iconColor: "text-yellow-600",
-      changeColor: analytics.presta > 0 ? "text-green-600" : "text-gray-500"
+      title: "Nouveaux (2 mois)",
+      value: analytics.recentUsers.toLocaleString(),
+      change: getChangePercentage(analytics.recentUsers, 'recentUsers'),
+      subtitle: "Créés dans les 2 derniers mois",
+      icon: Calendar,
+      iconBg: "bg-purple-100",
+      iconColor: "text-purple-600",
+      changeColor: analytics.recentUsers > 0 ? "text-green-600" : "text-gray-500"
     }
   ];
 

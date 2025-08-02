@@ -14,6 +14,11 @@ const EditProducteur = () => {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
     const [phoneError, setPhoneError] = useState('');
+    const [isConfirmed, setIsConfirmed] = useState(false);
+
+    // State for type options
+    const [typeOptions, setTypeOptions] = useState([]);
+    const [typeOptionsLoading, setTypeOptionsLoading] = useState(false);
 
     const [formData, setFormData] = useState({
         refadh: '',
@@ -40,17 +45,30 @@ const EditProducteur = () => {
         { id: 'Connections', label: 'Connections', icon: Link }
     ];
 
-    const typeOptions = [
-        "Non Adherent",
-        "Adherent",
-        "Achat",
-        "NON ADHERENT",
-        "NON  ADHERENTS",
-        "PRESTA",
-        "Non adherent"
-    ];
+    // Fetch type options
+    const fetchTypeOptions = async () => {
+        try {
+            setTypeOptionsLoading(true);
+            const res = await API.get("/TypeAdherents");
 
-    const certifOptions = ['OUI', 'NON', 'Actif'];
+            if (res.data && Array.isArray(res.data)) {
+                setTypeOptions(res.data);
+            } else {
+                setTypeOptions([]);
+            }
+        } catch (error) {
+            console.error('Error fetching type options:', error);
+            // Fallback to empty array on error
+            setTypeOptions([]);
+        } finally {
+            setTypeOptionsLoading(false);
+        }
+    };
+
+    // Fetch type options on component mount
+    useEffect(() => {
+        fetchTypeOptions();
+    }, []);
 
     // Function to format date for API (YYYY-MM-DD format for DateOnly)
     const formatDateForAPI = (dateString) => {
@@ -212,8 +230,8 @@ const EditProducteur = () => {
 
                 // Navigate back after 2 seconds
                 setTimeout(() => {
-                    navigate(-1); // Go back to previous page
-                }, 2000);
+                    navigate('/producteur');
+                }, 1000);
             } else {
                 throw new Error('Erreur lors de la modification');
             }
@@ -227,6 +245,57 @@ const EditProducteur = () => {
 
     const handleCancel = () => {
         navigate("/producteur")
+    };
+
+    const handleToggleAccountStatus = async () => {
+        if (!isConfirmed) return;
+
+        setIsSubmitting(true);
+        setSubmitMessage('');
+
+        try {
+            // Toggle the certif value
+            const newCertifValue = formData.certif === 'OUI' ? 'NON' : 'OUI';
+
+            // Update form data
+            const updatedFormData = {
+                ...formData,
+                certif: newCertifValue,
+                dtadd: formatDateForAPI(formData.dtadd)
+            };
+
+            // Send PUT request to update the adherent
+            const response = await API.put(`/Adherents/${params.id}`, updatedFormData, {
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+            });
+
+            if (response.status === 200 || response.status === 201 || response.status === 204) {
+                // Update local state
+                setFormData(prev => ({
+                    ...prev,
+                    certif: newCertifValue
+                }));
+
+                setSubmitMessage(
+                    newCertifValue === 'OUI'
+                        ? 'Compte activé avec succès!'
+                        : 'Compte désactivé avec succès!'
+                );
+
+                // Reset confirmation checkbox
+                setIsConfirmed(false);
+                navigate('/producteur');
+            } else {
+                throw new Error('Erreur lors de la modification du statut');
+            }
+        } catch (error) {
+            console.error('Status toggle error:', error);
+            setSubmitMessage('Erreur: ' + (error.response?.data?.message || error.message));
+        } finally {
+            setIsSubmitting(false);
+        }
     };
 
     // Loading state
@@ -294,214 +363,257 @@ const EditProducteur = () => {
 
                 {/* Account Tab Content */}
                 {activeTab === 'Account' && (
-                    <div className="bg-white rounded-2xl shadow-lg p-8">
-                        <div className="mb-6">
-                            <h2 className="text-2xl font-bold text-gray-900 mb-2">Modifier l'Adhérent</h2>
-                            <p className="text-gray-600">Modifiez les informations de l'adhérent</p>
-                        </div>
-
-                        {/* Success/Error Message */}
-                        {submitMessage && (
-                            <div className={`mb-6 p-4 rounded-lg ${submitMessage.includes('succès')
-                                ? 'bg-green-100 text-green-800 border border-green-200'
-                                : 'bg-red-100 text-red-800 border border-red-200'
-                                }`}>
-                                {submitMessage}
+                    <>
+                        <div className="bg-white rounded-2xl shadow-lg p-8">
+                            <div className="mb-6">
+                                <h2 className="text-2xl font-bold text-gray-900 mb-2">Modifier l'Adhérent</h2>
+                                <p className="text-gray-600">Modifiez les informations de l'adhérent</p>
                             </div>
-                        )}
 
-                        {/* Form Fields */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">
-                                    Referance Adherent <span className="text-red-500">*</span>
-                                </label>
-                                <div className="relative">
+                            {/* Success/Error Message */}
+                            {submitMessage && (
+                                <div className={`mb-6 p-4 rounded-lg ${submitMessage.includes('succès')
+                                    ? 'bg-green-100 text-green-800 border border-green-200'
+                                    : 'bg-red-100 text-red-800 border border-red-200'
+                                    }`}>
+                                    {submitMessage}
+                                </div>
+                            )}
+
+                            {/* Form Fields */}
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                                        Referance Adherent <span className="text-red-500">*</span>
+                                    </label>
+                                    <div className="relative">
+                                        <input
+                                            type="number"
+                                            value={formData.refadh}
+                                            disabled
+                                            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none transition-all"
+                                            placeholder="Entrez la référence de l'adhérent"
+                                        />
+                                    </div>
+                                </div>
+
+                                {/* Adherent Field - Added this field */}
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                                        Adhérent <span className="text-red-500">*</span>
+                                    </label>
                                     <input
-                                        type="number"
-                                        value={formData.refadh}
-                                        disabled
+                                        type="text"
+                                        value={formData.adherent}
+                                        onChange={(e) => handleInputChange('adherent', e.target.value)}
                                         className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none transition-all"
-                                        placeholder="Entrez la référence de l'adhérent"
+                                        placeholder="Nom de l'adhérent"
                                     />
                                 </div>
-                            </div>
 
-                            {/* Adherent Field - Added this field */}
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">
-                                    Adhérent <span className="text-red-500">*</span>
-                                </label>
-                                <input
-                                    type="text"
-                                    value={formData.adherent}
-                                    onChange={(e) => handleInputChange('adherent', e.target.value)}
-                                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none transition-all"
-                                    placeholder="Nom de l'adhérent"
-                                />
-                            </div>
-
-                            {/* Nom Producteur */}
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">
-                                    Nom Producteur <span className="text-red-500">*</span>
-                                </label>
-                                <input
-                                    type="text"
-                                    value={formData.nomadh}
-                                    onChange={(e) => handleInputChange('nomadh', e.target.value)}
-                                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none transition-all"
-                                    placeholder="Entrez le nom du producteur"
-                                />
-                            </div>
-
-                            {/* CIN OU IR */}
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">
-                                    CIN OU IR <span className="text-red-500">*</span>
-                                </label>
-                                <input
-                                    type="text"
-                                    value={formData.cinadh}
-                                    onChange={(e) => handleInputChange('cinadh', e.target.value)}
-                                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none transition-all"
-                                    placeholder="CIN ou numéro IR"
-                                />
-                            </div>
-
-                            {/* Adresse */}
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">
-                                    Adresse <span className="text-red-500">*</span>
-                                </label>
-                                <input
-                                    type="text"
-                                    value={formData.adradh}
-                                    onChange={(e) => handleInputChange('adradh', e.target.value)}
-                                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none transition-all"
-                                    placeholder="Adresse complète"
-                                />
-                            </div>
-
-                            {/* Ville / Province */}
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">
-                                    Ville / Province <span className="text-red-500">*</span>
-                                </label>
-                                <input
-                                    type="text"
-                                    value={formData.viladh}
-                                    onChange={(e) => handleInputChange('viladh', e.target.value)}
-                                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none transition-all"
-                                    placeholder="Ville ou province"
-                                />
-                            </div>
-
-                            {/* Téléphone */}
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">
-                                    Téléphone <span className="text-red-500">*</span>
-                                </label>
-                                <div className="relative">
+                                {/* Nom Producteur */}
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                                        Nom Producteur <span className="text-red-500">*</span>
+                                    </label>
                                     <input
-                                        type="tel"
-                                        value={formData.teladh}
-                                        onChange={(e) => handleInputChange('teladh', e.target.value)}
-                                        onBlur={handlePhoneBlur}
-                                        className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:border-transparent outline-none transition-all ${phoneError
-                                            ? 'border-red-500 focus:ring-red-500'
-                                            : 'border-gray-300 focus:ring-primary-500'
-                                            }`}
-                                        placeholder="0642971877"
+                                        type="text"
+                                        value={formData.nomadh}
+                                        onChange={(e) => handleInputChange('nomadh', e.target.value)}
+                                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none transition-all"
+                                        placeholder="Entrez le nom du producteur"
                                     />
                                 </div>
-                                {phoneError && (
-                                    <p className="mt-1 text-sm text-red-600">{phoneError}</p>
-                                )}
+
+                                {/* CIN OU IR */}
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                                        CIN OU IR <span className="text-red-500">*</span>
+                                    </label>
+                                    <input
+                                        type="text"
+                                        value={formData.cinadh}
+                                        onChange={(e) => handleInputChange('cinadh', e.target.value)}
+                                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none transition-all"
+                                        placeholder="CIN ou numéro IR"
+                                    />
+                                </div>
+
+                                {/* Adresse */}
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                                        Adresse <span className="text-red-500">*</span>
+                                    </label>
+                                    <input
+                                        type="text"
+                                        value={formData.adradh}
+                                        onChange={(e) => handleInputChange('adradh', e.target.value)}
+                                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none transition-all"
+                                        placeholder="Adresse complète"
+                                    />
+                                </div>
+
+                                {/* Ville / Province */}
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                                        Ville / Province <span className="text-red-500">*</span>
+                                    </label>
+                                    <input
+                                        type="text"
+                                        value={formData.viladh}
+                                        onChange={(e) => handleInputChange('viladh', e.target.value)}
+                                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none transition-all"
+                                        placeholder="Ville ou province"
+                                    />
+                                </div>
+
+                                {/* Téléphone */}
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                                        Téléphone <span className="text-red-500">*</span>
+                                    </label>
+                                    <div className="relative">
+                                        <input
+                                            type="tel"
+                                            value={formData.teladh}
+                                            onChange={(e) => handleInputChange('teladh', e.target.value)}
+                                            onBlur={handlePhoneBlur}
+                                            className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:border-transparent outline-none transition-all ${phoneError
+                                                ? 'border-red-500 focus:ring-red-500'
+                                                : 'border-gray-300 focus:ring-primary-500'
+                                                }`}
+                                            placeholder="0642971877"
+                                        />
+                                    </div>
+                                    {phoneError && (
+                                        <p className="mt-1 text-sm text-red-600">{phoneError}</p>
+                                    )}
+                                </div>
+
+                                {/* Fax */}
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                                        Fax
+                                    </label>
+                                    <input
+                                        type="text"
+                                        value={formData.faxadh}
+                                        onChange={(e) => handleInputChange('faxadh', e.target.value)}
+                                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none transition-all"
+                                        placeholder="Numéro de fax (optionnel)"
+                                    />
+                                </div>
+
+                                {/* Type */}
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                                        Type <span className="text-red-500">*</span>
+                                    </label>
+                                    <select
+                                        value={formData.type}
+                                        onChange={(e) => handleInputChange('type', e.target.value)}
+                                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none transition-all"
+                                    >
+                                        <option value="">Sélectionner un type</option>
+                                        {typeOptions.map(typeOption => (
+                                            <option key={typeOption.libelle} value={typeOption.libelle}>
+                                                {typeOption.libelle}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+
+                                {/* Nom Décompte */}
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                                        Nom Décompte <span className="text-red-500">*</span>
+                                    </label>
+                                    <input
+                                        type="text"
+                                        value={formData.nompro}
+                                        onChange={(e) => handleInputChange('nompro', e.target.value)}
+                                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none transition-all"
+                                        placeholder="Nom pour le décompte"
+                                    />
+                                </div>
                             </div>
 
-                            {/* Fax */}
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">
-                                    Fax
-                                </label>
-                                <input
-                                    type="text"
-                                    value={formData.faxadh}
-                                    onChange={(e) => handleInputChange('faxadh', e.target.value)}
-                                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none transition-all"
-                                    placeholder="Numéro de fax (optionnel)"
-                                />
-                            </div>
-
-                            {/* Type */}
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">
-                                    Type <span className="text-red-500">*</span>
-                                </label>
-                                <select
-                                    value={formData.type}
-                                    onChange={(e) => handleInputChange('type', e.target.value)}
-                                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none transition-all"
+                            {/* Action Buttons */}
+                            <div className="flex space-x-4 mt-8 pt-6 border-t border-gray-200">
+                                <button
+                                    onClick={handleSubmit}
+                                    disabled={isSubmitting || phoneError}
+                                    className="flex items-center space-x-2 bg-primary-600 text-white px-6 py-2.5 rounded-lg font-medium hover:bg-primary-700 disabled:bg-primary-400 disabled:cursor-not-allowed transition-colors"
                                 >
-                                    <option value="">Sélectionner un type</option>
-                                    {typeOptions.map(option => (
-                                        <option key={option} value={option}>{option}</option>
-                                    ))}
-                                </select>
-                            </div>
-
-                            {/* Nom Décompte */}
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">
-                                    Nom Décompte <span className="text-red-500">*</span>
-                                </label>
-                                <input
-                                    type="text"
-                                    value={formData.nompro}
-                                    onChange={(e) => handleInputChange('nompro', e.target.value)}
-                                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none transition-all"
-                                    placeholder="Nom pour le décompte"
-                                />
-                            </div>
-
-                            {/* Certification */}
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">
-                                    Certification
-                                </label>
-                                <select
-                                    value={formData.certif}
-                                    onChange={(e) => handleInputChange('certif', e.target.value)}
-                                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none transition-all"
+                                    <Save size={18} />
+                                    <span>{isSubmitting ? 'Modification...' : 'Modifier'}</span>
+                                </button>
+                                <button
+                                    onClick={handleCancel}
+                                    className="flex items-center space-x-2 text-gray-600 hover:text-black px-6 py-2.5 rounded-lg border border-gray-300 hover:border-gray-400 transition-colors"
                                 >
-                                    {certifOptions.map(option => (
-                                        <option key={option} value={option}>{option}</option>
-                                    ))}
-                                </select>
+                                    <X size={18} />
+                                    <span>Annuler</span>
+                                </button>
                             </div>
-
                         </div>
 
-                        {/* Action Buttons */}
-                        <div className="flex space-x-4 mt-8 pt-6 border-t border-gray-200">
+                        <div className="bg-white rounded-2xl shadow-lg p-8 mt-8">
+                            <h1 className="text-2xl font-semibold text-gray-900 mb-6">
+                                {formData.certif === 'OUI' ? 'Désactiver le Compte' : 'Activer le Compte'}
+                            </h1>
+
+                            <div className={`border rounded-lg p-4 mb-6 ${formData.certif === 'OUI'
+                                ? 'bg-orange-50 border-orange-200'
+                                : 'bg-green-50 border-green-200'
+                                }`}>
+                                <h2 className={`font-medium ${formData.certif === 'OUI' ? 'text-orange-800' : 'text-green-800'
+                                    }`}>
+                                    {formData.certif === 'OUI'
+                                        ? 'Êtes-vous sûr de vouloir désactiver ce compte?'
+                                        : 'Voulez-vous activer ce compte?'
+                                    }
+                                </h2>
+                                <p className={`text-sm mt-2 ${formData.certif === 'OUI' ? 'text-orange-700' : 'text-green-700'
+                                    }`}>
+                                    {formData.certif === 'OUI'
+                                        ? 'Cette action désactivera le compte de l\'adhérent.'
+                                        : 'Cette action activera le compte de l\'adhérent.'
+                                    }
+                                </p>
+                            </div>
+
+                            <div className="mb-6">
+                                <label className="flex items-center space-x-3 cursor-pointer">
+                                    <input
+                                        type="checkbox"
+                                        checked={isConfirmed}
+                                        onChange={(e) => setIsConfirmed(e.target.checked)}
+                                        className="w-4 h-4 text-primary-600 bg-gray-100 border-gray-300 rounded focus:ring-2"
+                                    />
+                                    <span className="text-gray-700 text-sm">
+                                        {formData.certif === 'OUI'
+                                            ? 'Je confirme la désactivation du compte'
+                                            : 'Je confirme l\'activation du compte'
+                                        }
+                                    </span>
+                                </label>
+                            </div>
+
                             <button
-                                onClick={handleSubmit}
-                                disabled={isSubmitting || phoneError}
-                                className="flex items-center space-x-2 bg-primary-600 text-white px-6 py-2.5 rounded-lg font-medium hover:bg-primary-700 disabled:bg-primary-400 disabled:cursor-not-allowed transition-colors"
+                                onClick={handleToggleAccountStatus}
+                                disabled={!isConfirmed}
+                                className={`px-6 py-3 rounded-lg font-medium text-white transition-colors ${isConfirmed
+                                    ? formData.certif === 'OUI'
+                                        ? 'bg-red-500 hover:bg-red-600 focus:ring-2 focus:ring-red-500 focus:ring-offset-2'
+                                        : 'bg-green-500 hover:bg-green-600 focus:ring-2 focus:ring-green-500 focus:ring-offset-2'
+                                    : 'bg-gray-300 cursor-not-allowed'
+                                    }`}
                             >
-                                <Save size={18} />
-                                <span>{isSubmitting ? 'Modification...' : 'Modifier'}</span>
-                            </button>
-                            <button
-                                onClick={handleCancel}
-                                className="flex items-center space-x-2 text-gray-600 hover:text-black px-6 py-2.5 rounded-lg border border-gray-300 hover:border-gray-400 transition-colors"
-                            >
-                                <X size={18} />
-                                <span>Annuler</span>
+                                {formData.certif === 'OUI' ? 'Désactiver le Compte' : 'Activer le Compte'}
                             </button>
                         </div>
-                    </div>
+                    </>
                 )}
 
                 {/* Other Tab Placeholders */}

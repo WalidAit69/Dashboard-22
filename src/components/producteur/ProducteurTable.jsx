@@ -18,6 +18,10 @@ const ProducteurTable = ({ initialData = [], onRefresh }) => {
   const [error, setError] = useState(null);
   const [retryCount, setRetryCount] = useState(0);
 
+  // State for type options
+  const [typeOptions, setTypeOptions] = useState([]);
+  const [typeOptionsLoading, setTypeOptionsLoading] = useState(false);
+
   // State for delete modal
   const [deleteModal, setDeleteModal] = useState({
     isOpen: false,
@@ -29,6 +33,31 @@ const ProducteurTable = ({ initialData = [], onRefresh }) => {
   useEffect(() => {
     setAdherents(initialData);
   }, [initialData]);
+
+  // Fetch type options
+  const fetchTypeOptions = async () => {
+    try {
+      setTypeOptionsLoading(true);
+      const res = await API.get("/TypeAdherents");
+
+      if (res.data && Array.isArray(res.data)) {
+        setTypeOptions(res.data);
+      } else {
+        setTypeOptions([]);
+      }
+    } catch (error) {
+      console.error('Error fetching type options:', error);
+      // Fallback to empty array on error
+      setTypeOptions([]);
+    } finally {
+      setTypeOptionsLoading(false);
+    }
+  };
+
+  // Fetch type options on component mount
+  useEffect(() => {
+    fetchTypeOptions();
+  }, []);
 
   const GetData = async (showLoading = true) => {
     try {
@@ -143,7 +172,7 @@ const ProducteurTable = ({ initialData = [], onRefresh }) => {
         (adherent.teladh?.toLowerCase().includes(searchTerm.toLowerCase()) || '');
 
       const matchesCertif = !certifFilter || adherent.certif === certifFilter;
-      const matchesType = !typeFilter || adherent.type === typeFilter;
+      const matchesType = !typeFilter || adherent.type.toLowerCase() === typeFilter.toLowerCase();
 
       return matchesSearch && matchesCertif && matchesType;
     });
@@ -154,9 +183,7 @@ const ProducteurTable = ({ initialData = [], onRefresh }) => {
   const startIndex = (currentPage - 1) * itemsPerPage;
   const paginatedAdherents = filteredAdherents.slice(startIndex, startIndex + itemsPerPage);
 
-  // Get unique values for filters
-  const certifOptions = [...new Set(adherents.map(adherent => adherent.certif).filter(Boolean))];
-  const typeOptions = [...new Set(adherents.map(adherent => adherent.type).filter(Boolean))];
+  const certifOptions = ['OUI', 'NON'];
 
   const getCertifBadge = (certif) => {
     const certifStyles = {
@@ -237,19 +264,27 @@ const ProducteurTable = ({ initialData = [], onRefresh }) => {
               <ChevronDown className="absolute right-3 top-3 w-4 h-4 text-gray-400 pointer-events-none" />
             </div>
 
-            {/* Type Filter */}
+            {/* Type Filter - Updated to use API data */}
             <div className="relative">
               <select
                 value={typeFilter}
                 onChange={(e) => setTypeFilter(e.target.value)}
                 className="w-full px-4 py-2 border border-gray-200 rounded-lg bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent appearance-none"
+                disabled={typeOptionsLoading}
               >
                 <option value="">Tous les types</option>
-                {typeOptions.map(type => (
-                  <option key={type} value={type}>{type}</option>
+                {typeOptions.map(typeOption => (
+                  <option key={typeOption.libelle} value={typeOption.libelle}>
+                    {typeOption.libelle}
+                  </option>
                 ))}
               </select>
               <ChevronDown className="absolute right-3 top-3 w-4 h-4 text-gray-400 pointer-events-none" />
+              {typeOptionsLoading && (
+                <div className="absolute right-8 top-3">
+                  <div className="w-4 h-4 border-2 border-primary-500 border-t-transparent rounded-full animate-spin"></div>
+                </div>
+              )}
             </div>
           </div>
 

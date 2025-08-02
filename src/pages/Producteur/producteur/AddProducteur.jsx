@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { User, Shield, CreditCard, Bell, Link, Save, X, ChevronLeft } from 'lucide-react';
 import API from '../../../utils/Api';
 import { useNavigate } from 'react-router-dom';
@@ -12,6 +12,10 @@ const AddProducteur = () => {
   const [phoneError, setPhoneError] = useState('');
   const navigate = useNavigate();
 
+  // State for type options
+  const [typeOptions, setTypeOptions] = useState([]);
+  const [typeOptionsLoading, setTypeOptionsLoading] = useState(false);
+
   const [formData, setFormData] = useState({
     refadh: '',
     nomadh: '',
@@ -21,7 +25,7 @@ const AddProducteur = () => {
     teladh: '',
     faxadh: '',
     lier: "1",
-    certif: '',
+    certif: 'OUI',
     type: '',
     nompro: '',
     txtref: '',
@@ -36,17 +40,30 @@ const AddProducteur = () => {
     { id: 'Connections', label: 'Connections', icon: Link }
   ];
 
-  const typeOptions = [
-    "Non Adherent",
-    "Adherent",
-    "Achat",
-    "NON ADHERENT",
-    "NON  ADHERENTS",
-    "PRESTA",
-    "Non adherent"
-  ];
+  // Fetch type options
+  const fetchTypeOptions = async () => {
+    try {
+      setTypeOptionsLoading(true);
+      const res = await API.get("/TypeAdherents");
 
-  const certifOptions = ['OUI', 'NON'];
+      if (res.data && Array.isArray(res.data)) {
+        setTypeOptions(res.data);
+      } else {
+        setTypeOptions([]);
+      }
+    } catch (error) {
+      console.error('Error fetching type options:', error);
+      // Fallback to empty array on error
+      setTypeOptions([]);
+    } finally {
+      setTypeOptionsLoading(false);
+    }
+  };
+
+  // Fetch type options on component mount
+  useEffect(() => {
+    fetchTypeOptions();
+  }, []);
 
   // Function to validate phone number format
   const validatePhoneNumber = (phone) => {
@@ -193,7 +210,7 @@ const AddProducteur = () => {
             teladh: '',
             faxadh: '',
             lier: "1",
-            certif: '',
+            certif: 'OUI',
             type: '',
             nompro: '',
             txtref: '',
@@ -403,8 +420,10 @@ const AddProducteur = () => {
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none transition-all"
                 >
                   <option value="">Sélectionner un type</option>
-                  {typeOptions.map(option => (
-                    <option key={option} value={option}>{option}</option>
+                  {typeOptions.map(typeOption => (
+                    <option key={typeOption.libelle} value={typeOption.libelle}>
+                      {typeOption.libelle}
+                    </option>
                   ))}
                 </select>
               </div>
@@ -424,7 +443,7 @@ const AddProducteur = () => {
               </div>
 
               {/* Certification */}
-              <div>
+              {/* <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Certification
                 </label>
@@ -438,7 +457,8 @@ const AddProducteur = () => {
                     <option key={option} value={option}>{option}</option>
                   ))}
                 </select>
-              </div>
+              </div> */}
+
             </div>
 
             {/* Action Buttons */}
