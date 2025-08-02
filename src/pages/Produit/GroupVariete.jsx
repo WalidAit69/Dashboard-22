@@ -154,8 +154,8 @@ function GroupVariete() {
   const validateForm = () => {
     const errors = {};
     // Sécuriser la valeur
-    const codgrv = typeof formData.codgrv === "string" ? formData.codgrv : "";
-
+    const codgrv = String(formData.codgrv);
+    console.log(codgrv);
     // Validation du code
     if (!codgrv.trim()) {
       errors.codgrv = 'Le code est requis';
@@ -217,7 +217,7 @@ function GroupVariete() {
       );
 
       closeModal();
-      console.log('Groupe variété mis à jour avec succès');
+      //console.log('Groupe variété mis à jour avec succès');
     } catch (error) {
       console.error('Erreur lors de la mise à jour du groupe variété:', error);
       // En cas d'erreur, recharger les données
