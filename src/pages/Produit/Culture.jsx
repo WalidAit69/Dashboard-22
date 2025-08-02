@@ -47,7 +47,18 @@ function Culture() {
   // Vérifier si le code de culture existe
   const checkCodeExists = async (code) => {
     if (!code || modalMode !== 'create') return;
+    // Vérifier d'abord localement
+    const existsLocally = cultures.some(culture =>
+      culture.codcul.toString().toLowerCase() === code.toString().toLowerCase()
+    );
 
+    if (existsLocally) {
+      setFormErrors(prev => ({
+        ...prev,
+        codcul: 'Ce code existe déjà. Veuillez utiliser un code différent.'
+      }));
+      return;
+    }
     try {
       setCheckingCode(true);
       const res = await API.get(`/Cultures/${code}`);
@@ -160,7 +171,16 @@ function Culture() {
       const res = await API.put(`/Cultures/${selectedCulture.codcul}`, formData);
 
       // Mettre à jour la culture dans la liste
-      fetchData()
+      //
+      //fetchData()
+      // Mise à jour optimiste locale
+      setCultures(prev =>
+        prev.map(culture =>
+          culture.codcul === selectedCulture.codcul
+            ? { ...culture, ...formData }
+            : culture
+        )
+      );
       closeModal();
 
       console.log('Culture mise à jour avec succès');
@@ -439,7 +459,7 @@ function Culture() {
                   </tr>
                 ) : (
                   cultures.map((culture, index) => (
-                    <tr key={culture.id || index} className="hover:bg-gray-50">
+                    <tr key={culture.codcul || index} className="hover:bg-gray-50">
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                         {culture.codcul}
                       </td>
@@ -488,7 +508,7 @@ function Culture() {
             ) : (
               <div className="divide-y divide-gray-200">
                 {cultures.map((culture, index) => (
-                  <div key={culture.id || index} className="p-4 hover:bg-gray-50 active:bg-gray-100 transition-colors">
+                  <div key={culture.codcul || index} className="p-4 hover:bg-gray-50 active:bg-gray-100 transition-colors">
                     <div className="flex justify-between items-start gap-3">
                       <div className="flex-1 min-w-0">
                         <div className="flex flex-col gap-1">

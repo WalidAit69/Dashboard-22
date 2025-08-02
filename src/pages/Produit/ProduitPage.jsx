@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Truck, Store, Leaf, Layers, Package, Menu, X } from 'lucide-react';
 import Culture from './Culture';
+import GroupVariete from './GroupVariete';
 
 function ProduitPage() {
     const [activeTab, setActiveTab] = useState('culture');
@@ -21,6 +22,8 @@ function ProduitPage() {
         switch (activeTab) {
             case 'culture':
                 return <Culture />;
+            case 'GroupVariete':
+                return <GroupVariete />;
             default:
                 return (
                     <div className="p-4 sm:p-6">
@@ -115,15 +118,15 @@ function ProduitPage() {
                                         key={item.id}
                                         onClick={() => setActiveTab(item.id)}
                                         className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-left transition-all duration-300 transform hover:scale-[1.02] active:scale-[0.98] hover:translate-x-1 ${isActive
-                                                ? 'bg-primary-100 text-primary-700 font-medium shadow-sm scale-[1.02] translate-x-1'
-                                                : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+                                            ? 'bg-primary-100 text-primary-700 font-medium shadow-sm scale-[1.02] translate-x-1'
+                                            : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
                                             }`}
                                     >
                                         <Icon
                                             size={18}
                                             className={`transition-all duration-300 ${isActive
-                                                    ? 'text-primary-600 scale-110 rotate-12'
-                                                    : 'scale-100 rotate-0 group-hover:scale-105'
+                                                ? 'text-primary-600 scale-110 rotate-12'
+                                                : 'scale-100 rotate-0 group-hover:scale-105'
                                                 }`}
                                         />
                                         <span className={`transition-all duration-300 ${isActive ? 'font-semibold' : 'font-normal'
