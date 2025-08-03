@@ -30,7 +30,7 @@ const AdherentDetail = () => {
       setLoading(false)
     }
   };
-
+  
   useEffect(() => {
     if (params.id) {
       fetchAdherent();

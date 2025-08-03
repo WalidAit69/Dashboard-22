@@ -4,7 +4,7 @@ import { User, Shield, CreditCard, Bell, Link, Save, X, ChevronLeft } from 'luci
 import API from '../../../utils/Api';
 import Loader from '../../../components/ui/Loader';
 
-const EditProducteur = () => {
+const EditVerger = () => {
     const params = useParams();
     const navigate = useNavigate();
 
@@ -13,28 +13,32 @@ const EditProducteur = () => {
     const [submitMessage, setSubmitMessage] = useState('');
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
-    const [phoneError, setPhoneError] = useState('');
     const [isConfirmed, setIsConfirmed] = useState(false);
 
-    // State for type options
-    const [typeOptions, setTypeOptions] = useState([]);
-    const [typeOptionsLoading, setTypeOptionsLoading] = useState(false);
+    // State for options
+    const [producteurOptions, setProducteurOptions] = useState([]);
+    const [stationOptions, setStationOptions] = useState([]);
+    const [producteurOptionsLoading, setProducteurOptionsLoading] = useState(false);
+    const [stationOptionsLoading, setStationOptionsLoading] = useState(false);
 
     const [formData, setFormData] = useState({
+        refver: '',
         refadh: '',
-        nomadh: '',
-        cinadh: '',
-        adradh: '',
-        viladh: '',
-        teladh: '',
-        faxadh: '',
-        lier: "1",
+        refStation: '1',
+        nomver: '',
+        supver: '',
+        region: '',
+        douar: '',
+        locver: '',
+        tecver: '',
+        disver: '',
+        disverf: '',
+        coment: '',
+        codggn: '',
         certif: '',
-        type: '',
-        nompro: '',
-        txtref: '',
-        dtadd: '',
-        adherent: '',
+        geoloc: '',
+        blocker: '',
+        Lier: '1',
     });
 
     const tabs = [
@@ -45,80 +49,79 @@ const EditProducteur = () => {
         { id: 'Connections', label: 'Connections', icon: Link }
     ];
 
-    // Fetch type options
-    const fetchTypeOptions = async () => {
+    // Fetch producteur options
+    const fetchProducteurOptions = async () => {
         try {
-            setTypeOptionsLoading(true);
-            const res = await API.get("/TypeAdherents");
+            setProducteurOptionsLoading(true);
+            const res = await API.get("/Adherents");
 
             if (res.data && Array.isArray(res.data)) {
-                setTypeOptions(res.data);
+                setProducteurOptions(res.data);
             } else {
-                setTypeOptions([]);
+                setProducteurOptions([]);
             }
         } catch (error) {
-            console.error('Error fetching type options:', error);
-            // Fallback to empty array on error
-            setTypeOptions([]);
+            console.error('Error fetching producteur options:', error);
+            setProducteurOptions([]);
         } finally {
-            setTypeOptionsLoading(false);
+            setProducteurOptionsLoading(false);
         }
     };
 
-    // Fetch type options on component mount
+    // Fetch station options
+    const fetchStationOptions = async () => {
+        try {
+            setStationOptionsLoading(true);
+            const res = await API.get("/Stations");
+
+            if (res.data && Array.isArray(res.data)) {
+                setStationOptions(res.data);
+            } else {
+                setStationOptions([]);
+            }
+        } catch (error) {
+            console.error('Error fetching station options:', error);
+            setStationOptions([]);
+        } finally {
+            setStationOptionsLoading(false);
+        }
+    };
+
+    // Fetch options on component mount
     useEffect(() => {
-        fetchTypeOptions();
+        fetchProducteurOptions();
+        fetchStationOptions();
     }, []);
 
-    // Function to format date for API (YYYY-MM-DD format for DateOnly)
-    const formatDateForAPI = (dateString) => {
-        if (!dateString) return null;
-
-        try {
-            // If it's already in YYYY-MM-DD format, return as is
-            if (/^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
-                return dateString;
-            }
-
-            // Try to parse and format the date
-            const date = new Date(dateString);
-            if (isNaN(date.getTime())) {
-                return null; // Invalid date
-            }
-
-            // Format as YYYY-MM-DD
-            return date.toISOString().split('T')[0];
-        } catch (error) {
-            console.error('Date formatting error:', error);
-            return null;
-        }
-    };
-
-    const fetchAdherent = async () => {
+    const fetchVerger = async () => {
         try {
             setLoading(true);
             setError(null);
 
-            const response = await API.get(`/Adherents/${params.id}`);
-            const adherentData = response.data;
+            const response = await API.get(`/Vergers/${params.id}`);
+            const vergerData = response.data;
 
-            console.log(adherentData)
-            // Update form data with fetched adherent data
+            console.log(vergerData);
+
+            // Update form data with fetched verger data
             setFormData({
-                refadh: adherentData.refadh || '',
-                nomadh: adherentData.nomadh || '',
-                cinadh: adherentData.cinadh || '',
-                adradh: adherentData.adradh || '',
-                viladh: adherentData.viladh || '',
-                teladh: adherentData.teladh || '',
-                faxadh: adherentData.faxadh || '',
-                lier: adherentData.lier || "1",
-                certif: adherentData.certif || '',
-                type: adherentData.type || '',
-                nompro: adherentData.nompro || '',
-                txtref: adherentData.txtref || '',
-                dtadd: adherentData.dtadd || "",
-                adherent: adherentData.adherent || adherentData.nomadh || '',
+                refver: vergerData.refver || '',
+                refadh: vergerData.refadh || '',
+                refStation: vergerData.refStation || '1',
+                nomver: vergerData.nomver || '',
+                supver: vergerData.supver || '',
+                region: vergerData.region || '',
+                douar: vergerData.douar || '',
+                locver: vergerData.locver || '',
+                tecver: vergerData.tecver || '',
+                disver: vergerData.disver || '',
+                disverf: vergerData.disverf || '',
+                coment: vergerData.coment || '',
+                codggn: vergerData.codggn || '',
+                certif: vergerData.certif || '',
+                geoloc: vergerData.geoloc || '',
+                blocker: vergerData.blocker || '',
+                Lier: vergerData.Lier || '1',
             });
 
         } catch (err) {
@@ -133,7 +136,7 @@ const EditProducteur = () => {
 
     useEffect(() => {
         if (params.id) {
-            fetchAdherent();
+            fetchVerger();
         }
     }, [params.id]);
 
@@ -142,44 +145,23 @@ const EditProducteur = () => {
             ...prev,
             [field]: value
         }));
-
-        // Clear phone error when user starts typing a new phone number
-        if (field === 'teladh') {
-            setPhoneError('');
-        }
-    };
-
-    // Function to validate phone number format
-    const validatePhoneNumber = (phone) => {
-        const phoneRegex = /^0\d{9}$/;
-        return phoneRegex.test(phone);
-    };
-
-    // Handle blur event for phone field
-    const handlePhoneBlur = () => {
-        const phoneValue = formData.teladh.trim();
-        if (phoneValue && !validatePhoneNumber(phoneValue)) {
-            setPhoneError('Le numéro de téléphone doit commencer par 0 et contenir exactement 10 chiffres (ex: 0642971877)');
-        } else {
-            setPhoneError('');
-        }
     };
 
     const validateForm = () => {
         // Field mapping with their user-friendly labels
         const fieldLabels = {
-            nomadh: 'Nom Producteur',
-            cinadh: 'CIN OU IR',
-            adradh: 'Adresse',
-            viladh: 'Ville / Province',
-            teladh: 'Téléphone',
-            type: 'Type',
-            nompro: 'Nom Décompte',
-            adherent: 'Adhérent'
+            nomver: 'Libellé Verger',
+            refadh: 'Producteur',
+            refStation: 'Station',
+            supver: 'Superficie',
+            region: 'Région',
+            douar: 'Adresse',
+            locver: 'Localisation',
+            tecver: 'Technicien'
         };
 
-        const required = ['nomadh', 'cinadh', 'adradh', 'viladh', 'teladh', 'type', 'nompro', 'adherent'];
-        const missing = required.filter(field => !formData[field].trim());
+        const required = ['nomver', 'refadh', 'refStation', 'supver', 'region', 'douar', 'locver', 'tecver'];
+        const missing = required.filter(field => !formData[field] || formData[field].toString().trim() === '');
 
         if (missing.length > 0) {
             const missingLabels = missing.map(field => fieldLabels[field]);
@@ -187,16 +169,19 @@ const EditProducteur = () => {
             return false;
         }
 
-        // Check if phone has an error
-        if (phoneError) {
-            setSubmitMessage('Veuillez corriger le format du numéro de téléphone avant de continuer');
+        // Validate numeric fields
+        if (formData.supver && isNaN(parseFloat(formData.supver))) {
+            setSubmitMessage('La superficie doit être un nombre valide');
             return false;
         }
 
-        // Validate phone number format if phone is provided
-        if (formData.teladh.trim() && !validatePhoneNumber(formData.teladh.trim())) {
-            setPhoneError('Le numéro de téléphone doit commencer par 0 et contenir exactement 10 chiffres (ex: 0642971877)');
-            setSubmitMessage('Veuillez corriger le format du numéro de téléphone avant de continuer');
+        if (formData.disver && isNaN(parseFloat(formData.disver))) {
+            setSubmitMessage('La distance doit être un nombre valide');
+            return false;
+        }
+
+        if (formData.disverf && isNaN(parseFloat(formData.disverf))) {
+            setSubmitMessage('La distance F doit être un nombre valide');
             return false;
         }
 
@@ -210,25 +195,28 @@ const EditProducteur = () => {
         setSubmitMessage('');
 
         try {
-            // Prepare data for submission with proper date formatting
+            // Convert numeric fields to proper types
             const submitData = {
                 ...formData,
-                dtadd: formatDateForAPI(formData.dtadd) // Format date properly for API
+                refver: parseInt(formData.refver),
+                refadh: parseInt(formData.refadh),
+                refStation: parseInt(formData.refStation),
+                supver: parseFloat(formData.supver),
+                disver: formData.disver ? parseFloat(formData.disver) : 0,
+                disverf: formData.disverf ? parseFloat(formData.disverf) : 0,
             };
 
-            console.log('Submitting data:', submitData);
-
-            // Send PUT request to update the adherent
-            const response = await API.put(`/Adherents/${params.id}`, submitData, {
+            // Send PUT request to update the verger
+            const response = await API.put(`/Vergers/${params.id}`, submitData, {
                 headers: {
                     'Content-Type': 'application/json',
                 },
             });
 
             if (response.status === 200 || response.status === 201 || response.status === 204) {
-                setSubmitMessage('Adhérent modifié avec succès!');
+                setSubmitMessage('Verger modifié avec succès!');
 
-                navigate('/producteur');
+                navigate('/verger');
             } else {
                 throw new Error('Erreur lors de la modification');
             }
@@ -241,10 +229,10 @@ const EditProducteur = () => {
     };
 
     const handleCancel = () => {
-        navigate("/producteur")
+        navigate("/verger");
     };
 
-    const handleToggleAccountStatus = async () => {
+    const handleToggleCertificationStatus = async () => {
         if (!isConfirmed) return;
 
         setIsSubmitting(true);
@@ -258,11 +246,16 @@ const EditProducteur = () => {
             const updatedFormData = {
                 ...formData,
                 certif: newCertifValue,
-                dtadd: formatDateForAPI(formData.dtadd)
+                refver: parseInt(formData.refver),
+                refadh: parseInt(formData.refadh),
+                refStation: parseInt(formData.refStation),
+                supver: parseFloat(formData.supver),
+                disver: formData.disver ? parseFloat(formData.disver) : 0,
+                disverf: formData.disverf ? parseFloat(formData.disverf) : 0,
             };
 
-            // Send PUT request to update the adherent
-            const response = await API.put(`/Adherents/${params.id}`, updatedFormData, {
+            // Send PUT request to update the verger
+            const response = await API.put(`/Vergers/${params.id}`, updatedFormData, {
                 headers: {
                     'Content-Type': 'application/json',
                 },
@@ -277,18 +270,18 @@ const EditProducteur = () => {
 
                 setSubmitMessage(
                     newCertifValue === 'OUI'
-                        ? 'Compte activé avec succès!'
-                        : 'Compte désactivé avec succès!'
+                        ? 'Verger certifié avec succès!'
+                        : 'Certification du verger retirée avec succès!'
                 );
 
                 // Reset confirmation checkbox
                 setIsConfirmed(false);
-                navigate('/producteur');
+                navigate('/verger');
             } else {
-                throw new Error('Erreur lors de la modification du statut');
+                throw new Error('Erreur lors de la modification du statut de certification');
             }
         } catch (error) {
-            console.error('Status toggle error:', error);
+            console.error('Certification toggle error:', error);
             setSubmitMessage('Erreur: ' + (error.response?.data?.message || error.message));
         } finally {
             setIsSubmitting(false);
@@ -363,8 +356,8 @@ const EditProducteur = () => {
                     <>
                         <div className="bg-white rounded-2xl shadow-lg p-8">
                             <div className="mb-6">
-                                <h2 className="text-2xl font-bold text-gray-900 mb-2">Modifier l'Adhérent</h2>
-                                <p className="text-gray-600">Modifiez les informations de l'adhérent</p>
+                                <h2 className="text-2xl font-bold text-gray-900 mb-2">Modifier le Verger</h2>
+                                <p className="text-gray-600">Modifiez les informations du verger</p>
                             </div>
 
                             {/* Success/Error Message */}
@@ -379,60 +372,107 @@ const EditProducteur = () => {
 
                             {/* Form Fields */}
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                {/* Reference Verger */}
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                                        Referance Adherent <span className="text-red-500">*</span>
-                                    </label>
-                                    <div className="relative">
-                                        <input
-                                            type="number"
-                                            value={formData.refadh}
-                                            disabled
-                                            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none transition-all"
-                                            placeholder="Entrez la référence de l'adhérent"
-                                        />
-                                    </div>
-                                </div>
-
-                                {/* Adherent Field - Added this field */}
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                                        Adhérent <span className="text-red-500">*</span>
+                                        Référence Verger <span className="text-red-500">*</span>
                                     </label>
                                     <input
-                                        type="text"
-                                        value={formData.adherent}
-                                        onChange={(e) => handleInputChange('adherent', e.target.value)}
-                                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none transition-all"
-                                        placeholder="Nom de l'adhérent"
+                                        type="number"
+                                        value={formData.refver}
+                                        disabled
+                                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none transition-all bg-gray-50"
+                                        placeholder="Référence du verger"
                                     />
                                 </div>
 
-                                {/* Nom Producteur */}
+                                {/* Producteur */}
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                                        Nom Producteur <span className="text-red-500">*</span>
+                                        Producteur <span className="text-red-500">*</span>
+                                    </label>
+                                    <select
+                                        value={formData.refadh}
+                                        onChange={(e) => handleInputChange('refadh', e.target.value)}
+                                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none transition-all"
+                                        disabled={producteurOptionsLoading}
+                                    >
+                                        <option value="">Sélectionner un producteur</option>
+                                        {producteurOptions.map(producteur => (
+                                            <option key={producteur.refadh} value={producteur.refadh}>
+                                                {producteur.nomadh} - {producteur.refadh}
+                                            </option>
+                                        ))}
+                                    </select>
+                                    {producteurOptionsLoading && (
+                                        <p className="mt-1 text-sm text-gray-500">Chargement des producteurs...</p>
+                                    )}
+                                </div>
+
+                                {/* Station */}
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                                        Station <span className="text-red-500">*</span>
+                                    </label>
+                                    <select
+                                        value={formData.refStation}
+                                        onChange={(e) => handleInputChange('refStation', e.target.value)}
+                                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none transition-all"
+                                        disabled={stationOptionsLoading}
+                                    >
+                                        <option value="">Sélectionner une station</option>
+                                        {stationOptions.map(station => (
+                                            <option key={station.refsta} value={station.refsta}>
+                                                {station.nomsta} - {station.refsta}
+                                            </option>
+                                        ))}
+                                    </select>
+                                    {stationOptionsLoading && (
+                                        <p className="mt-1 text-sm text-gray-500">Chargement des stations...</p>
+                                    )}
+                                </div>
+
+                                {/* Libelle Verger */}
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                                        Libellé Verger <span className="text-red-500">*</span>
                                     </label>
                                     <input
                                         type="text"
-                                        value={formData.nomadh}
-                                        onChange={(e) => handleInputChange('nomadh', e.target.value)}
+                                        value={formData.nomver}
+                                        onChange={(e) => handleInputChange('nomver', e.target.value)}
                                         className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none transition-all"
-                                        placeholder="Entrez le nom du producteur"
+                                        placeholder="Nom du verger"
                                     />
                                 </div>
 
-                                {/* CIN OU IR */}
+                                {/* Superficie */}
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                                        CIN OU IR <span className="text-red-500">*</span>
+                                        Superficie (ha) <span className="text-red-500">*</span>
+                                    </label>
+                                    <input
+                                        type="number"
+                                        step="0.01"
+                                        min="0"
+                                        value={formData.supver}
+                                        onChange={(e) => handleInputChange('supver', e.target.value)}
+                                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none transition-all"
+                                        placeholder="0.00"
+                                    />
+                                </div>
+
+                                {/* Région */}
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                                        Région <span className="text-red-500">*</span>
                                     </label>
                                     <input
                                         type="text"
-                                        value={formData.cinadh}
-                                        onChange={(e) => handleInputChange('cinadh', e.target.value)}
+                                        value={formData.region}
+                                        onChange={(e) => handleInputChange('region', e.target.value)}
                                         className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none transition-all"
-                                        placeholder="CIN ou numéro IR"
+                                        placeholder="Nom de la région"
                                     />
                                 </div>
 
@@ -443,94 +483,127 @@ const EditProducteur = () => {
                                     </label>
                                     <input
                                         type="text"
-                                        value={formData.adradh}
-                                        onChange={(e) => handleInputChange('adradh', e.target.value)}
+                                        value={formData.douar}
+                                        onChange={(e) => handleInputChange('douar', e.target.value)}
                                         className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none transition-all"
-                                        placeholder="Adresse complète"
+                                        placeholder="Adresse du verger"
                                     />
                                 </div>
 
-                                {/* Ville / Province */}
+                                {/* Localisation */}
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                                        Ville / Province <span className="text-red-500">*</span>
+                                        Localisation <span className="text-red-500">*</span>
                                     </label>
                                     <input
                                         type="text"
-                                        value={formData.viladh}
-                                        onChange={(e) => handleInputChange('viladh', e.target.value)}
+                                        value={formData.locver}
+                                        onChange={(e) => handleInputChange('locver', e.target.value)}
                                         className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none transition-all"
-                                        placeholder="Ville ou province"
+                                        placeholder="Localisation précise"
                                     />
                                 </div>
 
-                                {/* Téléphone */}
+                                {/* Technicien */}
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                                        Téléphone <span className="text-red-500">*</span>
-                                    </label>
-                                    <div className="relative">
-                                        <input
-                                            type="tel"
-                                            value={formData.teladh}
-                                            onChange={(e) => handleInputChange('teladh', e.target.value)}
-                                            onBlur={handlePhoneBlur}
-                                            className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:border-transparent outline-none transition-all ${phoneError
-                                                ? 'border-red-500 focus:ring-red-500'
-                                                : 'border-gray-300 focus:ring-primary-500'
-                                                }`}
-                                            placeholder="0642971877"
-                                        />
-                                    </div>
-                                    {phoneError && (
-                                        <p className="mt-1 text-sm text-red-600">{phoneError}</p>
-                                    )}
-                                </div>
-
-                                {/* Fax */}
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                                        Fax
+                                        Technicien <span className="text-red-500">*</span>
                                     </label>
                                     <input
                                         type="text"
-                                        value={formData.faxadh}
-                                        onChange={(e) => handleInputChange('faxadh', e.target.value)}
+                                        value={formData.tecver}
+                                        onChange={(e) => handleInputChange('tecver', e.target.value)}
                                         className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none transition-all"
-                                        placeholder="Numéro de fax (optionnel)"
+                                        placeholder="Nom du technicien"
                                     />
                                 </div>
 
-                                {/* Type */}
+                                {/* Distance */}
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                                        Type <span className="text-red-500">*</span>
+                                        Distance
+                                    </label>
+                                    <input
+                                        type="number"
+                                        step="0.01"
+                                        min="0"
+                                        value={formData.disver}
+                                        onChange={(e) => handleInputChange('disver', e.target.value)}
+                                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none transition-all"
+                                        placeholder="0.00"
+                                    />
+                                </div>
+
+                                {/* Distance F */}
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                                        Distance F
+                                    </label>
+                                    <input
+                                        type="number"
+                                        step="0.01"
+                                        min="0"
+                                        value={formData.disverf}
+                                        onChange={(e) => handleInputChange('disverf', e.target.value)}
+                                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none transition-all"
+                                        placeholder="0.00"
+                                    />
+                                </div>
+
+                                {/* Code GGN */}
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                                        Code GGN
+                                    </label>
+                                    <input
+                                        type="text"
+                                        value={formData.codggn}
+                                        onChange={(e) => handleInputChange('codggn', e.target.value)}
+                                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none transition-all"
+                                        placeholder="Code GGN"
+                                    />
+                                </div>
+
+                                {/* GeoLocalisation */}
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                                        GeoLocalisation
+                                    </label>
+                                    <input
+                                        type="text"
+                                        value={formData.geoloc}
+                                        onChange={(e) => handleInputChange('geoloc', e.target.value)}
+                                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none transition-all"
+                                        placeholder="Coordonnées géographiques"
+                                    />
+                                </div>
+
+                                {/* Actif O/N */}
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                                        Actif O/N
                                     </label>
                                     <select
-                                        value={formData.type}
-                                        onChange={(e) => handleInputChange('type', e.target.value)}
+                                        value={formData.blocker}
+                                        onChange={(e) => handleInputChange('blocker', e.target.value)}
                                         className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none transition-all"
                                     >
-                                        <option value="">Sélectionner un type</option>
-                                        {typeOptions.map(typeOption => (
-                                            <option key={typeOption.libelle} value={typeOption.libelle}>
-                                                {typeOption.libelle}
-                                            </option>
-                                        ))}
+                                        <option value="N">Actif</option>
+                                        <option value="O">Bloqué</option>
                                     </select>
                                 </div>
 
-                                {/* Nom Décompte */}
-                                <div>
+                                {/* Remarque - Full width */}
+                                <div className="md:col-span-2">
                                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                                        Nom Décompte <span className="text-red-500">*</span>
+                                        Remarque
                                     </label>
-                                    <input
-                                        type="text"
-                                        value={formData.nompro}
-                                        onChange={(e) => handleInputChange('nompro', e.target.value)}
-                                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none transition-all"
-                                        placeholder="Nom pour le décompte"
+                                    <textarea
+                                        rows={4}
+                                        value={formData.coment}
+                                        onChange={(e) => handleInputChange('coment', e.target.value)}
+                                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none transition-all resize-none"
+                                        placeholder="Remarques ou commentaires..."
                                     />
                                 </div>
                             </div>
@@ -539,7 +612,7 @@ const EditProducteur = () => {
                             <div className="flex space-x-4 mt-8 pt-6 border-t border-gray-200">
                                 <button
                                     onClick={handleSubmit}
-                                    disabled={isSubmitting || phoneError}
+                                    disabled={isSubmitting}
                                     className="flex items-center space-x-2 bg-primary-600 text-white px-6 py-2.5 rounded-lg font-medium hover:bg-primary-700 disabled:bg-primary-400 disabled:cursor-not-allowed transition-colors"
                                 >
                                     <Save size={18} />
@@ -555,6 +628,7 @@ const EditProducteur = () => {
                             </div>
                         </div>
 
+                        {/* Certification Status Toggle Section */}
                         <div className="bg-white rounded-2xl shadow-lg p-8 mt-8">
                             <h1 className="text-2xl font-semibold text-gray-900 mb-6">
                                 {formData.certif === 'OUI' ? 'Désactiver le Compte' : 'Activer le Compte'}
@@ -574,8 +648,8 @@ const EditProducteur = () => {
                                 <p className={`text-sm mt-2 ${formData.certif === 'OUI' ? 'text-orange-700' : 'text-green-700'
                                     }`}>
                                     {formData.certif === 'OUI'
-                                        ? 'Cette action désactivera le compte de l\'adhérent.'
-                                        : 'Cette action activera le compte de l\'adhérent.'
+                                        ? 'Cette action désactivera le compte du verger.'
+                                        : 'Cette action activera le compte du verger.'
                                     }
                                 </p>
                             </div>
@@ -598,7 +672,7 @@ const EditProducteur = () => {
                             </div>
 
                             <button
-                                onClick={handleToggleAccountStatus}
+                                onClick={handleToggleCertificationStatus}
                                 disabled={!isConfirmed}
                                 className={`px-6 py-3 rounded-lg font-medium text-white transition-colors ${isConfirmed
                                     ? formData.certif === 'OUI'
@@ -631,4 +705,4 @@ const EditProducteur = () => {
     );
 };
 
-export default EditProducteur;
+export default EditVerger;

@@ -4,7 +4,6 @@ import Reception from "./pages/Reception";
 import Export from "./pages/Export";
 import Ecart from "./pages/Ecart";
 import GestionUtilisateur from "./pages/GestionUtilisateur";
-import Verger from "./pages/Producteur/Verger";
 import Parcelle from "./pages/Producteur/Parcelle";
 import Protocole from "./pages/Producteur/Protocole";
 import DeclarationVerger from "./pages/Producteur/DeclarationVerger";
@@ -21,6 +20,10 @@ import ProducteurDetail from "./pages/Producteur/producteur/ProducteurDetail";
 import EditProducteur from "./pages/Producteur/producteur/EditProducteur";
 import Culture from "./pages/Produit/Culture";
 import ProduitPage from "./pages/Produit/ProduitPage";
+import Verger from "./pages/Producteur/verger/Verger";
+import AddVerger from "./pages/Producteur/verger/AddVerger";
+import EditVerger from "./pages/Producteur/verger/EditVerger";
+import VergerDetail from "./pages/Producteur/verger/VergerDetail";
 
 function App() {
   return (
@@ -44,6 +47,9 @@ function App() {
               <Route path="/producteur/edit/:id" element={<EditProducteur />} />
 
               <Route path="/verger" element={<Verger />} />
+              <Route path="/verger/add" element={<AddVerger />} />
+              <Route path="/verger/edit/:id" element={<EditVerger />} />
+              <Route path="/verger/:id" element={<VergerDetail />} />
               <Route path="/parcelle" element={<Parcelle />} />
               <Route path="/protocole" element={<Protocole />} />
               <Route path="/declaration-verger" element={<DeclarationVerger />} />

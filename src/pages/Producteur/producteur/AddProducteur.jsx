@@ -199,26 +199,7 @@ const AddProducteur = () => {
       if (response.status === 200 || response.status === 201) {
         setSubmitMessage('Adhérent ajouté avec succès!');
 
-        // Reset form after 3 seconds
-        setTimeout(() => {
-          setFormData({
-            refadh: '',
-            nomadh: '',
-            cinadh: '',
-            adradh: '',
-            viladh: '',
-            teladh: '',
-            faxadh: '',
-            lier: "1",
-            certif: 'OUI',
-            type: '',
-            nompro: '',
-            txtref: '',
-            dtadd: new Date().toISOString().split('T')[0], // Current date
-          });
-          setSubmitMessage('');
-          setRefError('');
-        }, 3000);
+        navigate("/producteur")
       } else {
         throw new Error('Erreur lors de l\'ajout');
       }
