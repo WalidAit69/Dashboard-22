@@ -8,7 +8,7 @@ import Parcelle from "./pages/Producteur/Parcelle";
 import Protocole from "./pages/Producteur/Protocole";
 import DeclarationVerger from "./pages/Producteur/DeclarationVerger";
 import Base from "./pages/Producteur/Base";
-import PorteGreef from "./pages/Producteur/PorteGreef";
+//import PorteGreef from "./pages/Producteur/PorteGreef";
 import TypeProducteur from "./pages/Producteur/TypeProducteur";
 import GroupVariete from "./pages/Produit/GroupVariete";
 import Variete from "./pages/Produit/Variete";
@@ -20,6 +20,9 @@ import ProducteurDetail from "./pages/Producteur/producteur/ProducteurDetail";
 import EditProducteur from "./pages/Producteur/producteur/EditProducteur";
 import Culture from "./pages/Produit/Culture";
 import ProduitPage from "./pages/Produit/ProduitPage";
+import BasesPage from "./pages/Bases/BasesPage";
+import PorteGreef from "./pages/Bases/PorteGreffe";
+import Protocoles from "./pages/Bases/Protocoles";
 import Verger from "./pages/Producteur/verger/Verger";
 import AddVerger from "./pages/Producteur/verger/AddVerger";
 import EditVerger from "./pages/Producteur/verger/EditVerger";
@@ -53,7 +56,7 @@ function App() {
               <Route path="/parcelle" element={<Parcelle />} />
               <Route path="/protocole" element={<Protocole />} />
               <Route path="/declaration-verger" element={<DeclarationVerger />} />
-              <Route path="/base" element={<Base />} />
+              <Route path="/base" element={<BasesPage />} />
               <Route path="/porte-greef" element={<PorteGreef />} />
               <Route path="/type-producteur" element={<TypeProducteur />} />
 
@@ -63,6 +66,10 @@ function App() {
               <Route path="/group-variete" element={<GroupVariete />} />
               <Route path="/variete" element={<Variete />} />
               <Route path="/sous-variete" element={<SousVariete />} />
+
+              {/* Produit routes */}
+              <Route path="/PorteGreef" element={<PorteGreef />} />
+              <Route path="/Protocole" element={<Protocole />} />
             </Routes>
           </main>
         </div>
