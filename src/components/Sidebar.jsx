@@ -9,10 +9,8 @@ import {
     Package,
     TreePine,
     Map,
-    FileCheck,
     Layers,
     Building,
-    Leaf,
     Menu,
     X,
     ChevronLeft
@@ -245,15 +243,6 @@ const Sidebar = () => {
                                             isCollapsed={isCollapsed && !isHovered}
                                         />
                                     </Link>
-                                    <Link to="/protocole" onClick={closeSidebar}>
-                                        <MenuItem
-                                            icon={FileCheck}
-                                            label="Protocole"
-                                            isSubItem={true}
-                                            isActive={isActive('/protocole')}
-                                            isCollapsed={isCollapsed && !isHovered}
-                                        />
-                                    </Link>
                                     <Link to="/declaration-verger" onClick={closeSidebar}>
                                         <MenuItem
                                             icon={FileText}
@@ -269,24 +258,6 @@ const Sidebar = () => {
                                             label="Base"
                                             isSubItem={true}
                                             isActive={isActive('/base')}
-                                            isCollapsed={isCollapsed && !isHovered}
-                                        />
-                                    </Link>
-                                    <Link to="/porte-greef" onClick={closeSidebar}>
-                                        <MenuItem
-                                            icon={TreePine}
-                                            label="Porte greef"
-                                            isSubItem={true}
-                                            isActive={isActive('/porte-greef')}
-                                            isCollapsed={isCollapsed && !isHovered}
-                                        />
-                                    </Link>
-                                    <Link to="/type-producteur" onClick={closeSidebar}>
-                                        <MenuItem
-                                            icon={Users}
-                                            label="Type de producteur"
-                                            isSubItem={true}
-                                            isActive={isActive('/type-producteur')}
                                             isCollapsed={isCollapsed && !isHovered}
                                         />
                                     </Link>

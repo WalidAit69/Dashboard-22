@@ -3,7 +3,7 @@ import AnalyticsCard from '../../../components/dashboard/AnalyticsCard'
 import { TreePine, MapPin, Calendar, TrendingUp } from 'lucide-react';
 import API from "../../../utils/Api";
 import Loader from '../../../components/ui/Loader';
-import VergerTable from './VergerTable';
+import VergerTable from '../../../components/verger/VergerTable';
 
 function Verger() {
   const [vergers, setVergers] = useState([]);

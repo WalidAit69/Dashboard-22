@@ -264,7 +264,7 @@ const ProducteurTable = ({ initialData = [], onRefresh }) => {
               <ChevronDown className="absolute right-3 top-3 w-4 h-4 text-gray-400 pointer-events-none" />
             </div>
 
-            {/* Type Filter - Updated to use API data */}
+            {/* Type Filter */}
             <div className="relative">
               <select
                 value={typeFilter}

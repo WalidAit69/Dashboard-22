@@ -12,9 +12,9 @@ import {
   Pen,
 } from "lucide-react";
 import { Link } from "react-router-dom";
-import API from "../../../utils/Api";
-import Loader from "../../../components/ui/Loader";
-import ConfirmationModal from "../../../components/producteur/ConfirmationModal";
+import API from "../../utils/Api";
+import Loader from "../ui/Loader";
+import ConfirmationModal from "../producteur/ConfirmationModal";
 
 const VergerTable = ({ initialData = [], onRefresh }) => {
   const [searchTerm, setSearchTerm] = useState("");

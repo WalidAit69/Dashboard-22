@@ -45,7 +45,7 @@ function ProduitPage() {
     return (
         <div className="min-h-screen mt-10">
             {/* Mobile Header */}
-            <div className="lg:hidden bg-white rounded-2xl mx-4 px-4 py-3 shadow-sm">
+            <div className="lg:hidden bg-white rounded-2xl mb-4 px-4 py-3 shadow-sm">
                 <div className="flex items-center justify-between">
                     <h1 className="text-lg font-semibold text-gray-900">Produit</h1>
                     <button

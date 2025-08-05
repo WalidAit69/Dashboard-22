@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Users, TreePine, FileText, Building2, Menu, X } from 'lucide-react';
+import { Users, TreePine, FileText, Menu, X } from 'lucide-react';
 import TypeProducteur from './TypeProducteur';
 import PorteGreffe from './PorteGreffe';
 import Protocole from './Protocoles';
@@ -42,7 +42,7 @@ function BasesPage() {
     return (
         <div className="min-h-screen mt-10">
             {/* Mobile Header */}
-            <div className="lg:hidden bg-white rounded-2xl mx-4 px-4 py-3 shadow-sm">
+            <div className="lg:hidden bg-white rounded-2xl px-4 py-3 shadow-sm mb-4">
                 <div className="flex items-center justify-between">
                     <h1 className="text-lg font-semibold text-gray-900">Bases</h1>
                     <button
