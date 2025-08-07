@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { User, MapPin, TreePine, Settings, Info, Save, X, ChevronLeft } from 'lucide-react';
+import { MapPin, TreePine, Settings, Info, Save, X, ChevronLeft } from 'lucide-react';
 import API from '../../../utils/Api';
 import { useNavigate, useParams } from 'react-router-dom';
 
@@ -16,9 +16,15 @@ const EditParcelle = () => {
   // State for dropdown options
   const [vergers, setVergers] = useState([]);
   const [cultures, setCultures] = useState([]);
-  const [sousVarietes, setSousVarietes] = useState([]);
-  const [varietes, setVarietes] = useState([]);
   const [optionsLoading, setOptionsLoading] = useState(false);
+
+  // State for cascading dropdown options
+  const [cascadingOptions, setCascadingOptions] = useState({
+    allVarietes: [], // Store all varietes for filtering
+    allSousVarietes: [], // Store all sous-varietes for filtering
+    filteredVarietes: [], // Current filtered varietes
+    filteredSousVarietes: [] // Current filtered sous-varietes
+  });
 
   // Store original reference for checking duplicates
   const [originalRef, setOriginalRef] = useState('');
@@ -57,17 +63,22 @@ const EditParcelle = () => {
     try {
       setOptionsLoading(true);
 
-      const [vergersRes, culturesRes, sousVarietesRes, varietesRes] = await Promise.all([
+      const [vergersRes, culturesRes, varietesRes, sousVarietesRes] = await Promise.all([
         API.get("/Vergers"),
         API.get("/Cultures"),
-        API.get("/SousVarietes"),
         API.get("/Varietes"),
+        API.get("/SousVarietes"),
       ]);
 
       setVergers(Array.isArray(vergersRes.data) ? vergersRes.data : []);
       setCultures(Array.isArray(culturesRes.data) ? culturesRes.data : []);
-      setSousVarietes(Array.isArray(sousVarietesRes.data) ? sousVarietesRes.data : []);
-      setVarietes(Array.isArray(varietesRes.data) ? varietesRes.data : []);
+      
+      // Store all varietes and sous-varietes for cascading filtering
+      setCascadingOptions(prev => ({
+        ...prev,
+        allVarietes: Array.isArray(varietesRes.data) ? varietesRes.data : [],
+        allSousVarietes: Array.isArray(sousVarietesRes.data) ? sousVarietesRes.data : [],
+      }));
     } catch (error) {
       console.error('Error fetching options:', error);
       setSubmitMessage('Erreur lors du chargement des options');
@@ -75,6 +86,44 @@ const EditParcelle = () => {
       setOptionsLoading(false);
     }
   };
+
+  // Initialize cascading filters based on existing data
+  const initializeCascadingFilters = (parcelleData) => {
+    const { numcul, codvar } = parcelleData;
+    
+    if (numcul && cascadingOptions.allVarietes.length > 0) {
+      // Filter varietes by culture
+      const filteredVarietes = cascadingOptions.allVarietes.filter(v => 
+        v.codcul && Number(v.codcul) === Number(numcul)
+      );
+      
+      if (codvar && cascadingOptions.allSousVarietes.length > 0) {
+        // Filter sous-varietes by variety
+        const filteredSousVarietes = cascadingOptions.allSousVarietes.filter(sv => 
+          sv.codvar && Number(sv.codvar) === Number(codvar)
+        );
+        
+        setCascadingOptions(prev => ({
+          ...prev,
+          filteredVarietes,
+          filteredSousVarietes
+        }));
+      } else {
+        setCascadingOptions(prev => ({
+          ...prev,
+          filteredVarietes,
+          filteredSousVarietes: []
+        }));
+      }
+    }
+  };
+
+  // Update cascading filters when options are loaded and form data is available
+  useEffect(() => {
+    if (cascadingOptions.allVarietes.length > 0 && formData.numcul) {
+      initializeCascadingFilters(formData);
+    }
+  }, [cascadingOptions.allVarietes, cascadingOptions.allSousVarietes, formData.numcul, formData.codvar]);
 
   // Fetch existing parcelle data
   const fetchParcelleData = async () => {
@@ -90,7 +139,7 @@ const EditParcelle = () => {
           ? new Date(parcelleData.dtepln).toISOString().split('T')[0]
           : '';
 
-        setFormData({
+        const newFormData = {
           idparcelle: parcelleData.idparcelle || '',
           refpar: parcelleData.refpar || '',
           suppar: parcelleData.suppar || '',
@@ -111,7 +160,9 @@ const EditParcelle = () => {
           codsvar: parcelleData.codsvar || '',
           codvar: parcelleData.codvar || '',
           refadh: parcelleData.refadh || ''
-        });
+        };
+
+        setFormData(newFormData);
 
         // Store original reference for duplicate checking
         setOriginalRef(parcelleData.refpar || '');
@@ -165,11 +216,80 @@ const EditParcelle = () => {
     }
   };
 
+  // Handle cascading dropdown changes
+  const handleCascadingChange = (field, value) => {
+    if (field === 'numcul') {
+      // When culture changes, filter varietes and clear dependent fields
+      setFormData(prev => ({
+        ...prev,
+        numcul: value,
+        codvar: '', // Clear variety
+        codsvar: '' // Clear sub-variety
+      }));
+
+      if (value) {
+        // Filter varietes by selected culture
+        const filteredVarietes = cascadingOptions.allVarietes.filter(v => 
+          v.numcul && Number(v.numcul) === Number(value)
+        );
+        
+        setCascadingOptions(prev => ({
+          ...prev,
+          filteredVarietes,
+          filteredSousVarietes: [] // Clear sous-varietes when culture changes
+        }));
+      } else {
+        // Clear all filtered options when no culture is selected
+        setCascadingOptions(prev => ({
+          ...prev,
+          filteredVarietes: [],
+          filteredSousVarietes: []
+        }));
+      }
+    } else if (field === 'codvar') {
+      // When variety changes, filter sous-varietes
+      setFormData(prev => ({
+        ...prev,
+        codvar: value,
+        codsvar: '' // Clear sub-variety
+      }));
+
+      if (value) {
+        // Filter sous-varietes by selected variety
+        const filteredSousVarietes = cascadingOptions.allSousVarietes.filter(sv => 
+          sv.codvar && Number(sv.codvar) === Number(value)
+        );
+        
+        setCascadingOptions(prev => ({
+          ...prev,
+          filteredSousVarietes
+        }));
+      } else {
+        // Clear sous-varietes when no variety is selected
+        setCascadingOptions(prev => ({
+          ...prev,
+          filteredSousVarietes: []
+        }));
+      }
+    } else if (field === 'codsvar') {
+      // Simple field update for sous-variety
+      setFormData(prev => ({
+        ...prev,
+        codsvar: value
+      }));
+    }
+  };
+
   const handleInputChange = (field, value) => {
-    setFormData(prev => ({
-      ...prev,
-      [field]: value
-    }));
+    // Check if this is a cascading field
+    if (field === 'numcul' || field === 'codvar' || field === 'codsvar') {
+      handleCascadingChange(field, value);
+    } else {
+      setFormData(prev => ({
+        ...prev,
+        [field]: value
+      }));
+    }
 
     // Clear reference error when user starts typing a new reference
     if (field === 'refpar') {
@@ -272,6 +392,54 @@ const EditParcelle = () => {
   const handleCancel = () => {
     navigate("/parcelle");
   };
+
+  const getCurrentTabIndex = () => {
+    return tabs.findIndex(tab => tab.id === activeTab);
+  };
+
+  const canGoNext = () => {
+    return getCurrentTabIndex() < tabs.length - 1;
+  };
+
+  const canGoPrevious = () => {
+    return getCurrentTabIndex() > 0;
+  };
+
+  const handleNext = () => {
+    const currentIndex = getCurrentTabIndex();
+    if (currentIndex < tabs.length - 1) {
+      setActiveTab(tabs[currentIndex + 1].id);
+    }
+  };
+
+  const handlePrevious = () => {
+    const currentIndex = getCurrentTabIndex();
+    if (currentIndex > 0) {
+      setActiveTab(tabs[currentIndex - 1].id);
+    }
+  };
+
+  const NavigationButtons = () => (
+    <div className="flex justify-between items-center mt-8 pt-6 border-t border-gray-200">
+      <button
+        onClick={handlePrevious}
+        disabled={!canGoPrevious()}
+        className="flex items-center space-x-2 text-gray-600 hover:text-black px-6 py-2.5 rounded-lg border border-gray-300 hover:border-gray-400 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+      >
+        <ChevronLeft size={18} />
+        <span>Retour</span>
+      </button>
+
+      <button
+        onClick={handleNext}
+        disabled={!canGoNext()}
+        className="flex items-center space-x-2 bg-primary-600 text-white px-6 py-2.5 rounded-lg font-medium hover:bg-primary-700 disabled:bg-primary-400 disabled:cursor-not-allowed transition-colors"
+      >
+        <span>Suivant</span>
+        <ChevronLeft size={18} className="rotate-180" />
+      </button>
+    </div>
+  );
 
   // Show loading spinner while fetching data
   if (isLoading) {
@@ -435,6 +603,8 @@ const EditParcelle = () => {
                 />
               </div>
             </div>
+
+            <NavigationButtons />
           </div>
         )}
 
@@ -507,10 +677,13 @@ const EditParcelle = () => {
                 />
               </div>
             </div>
+
+            <NavigationButtons />
+
           </div>
         )}
 
-        {/* Cultivation Tab Content */}
+        {/* Cultivation Tab Content - WITH CASCADING DROPDOWNS */}
         {activeTab === 'Cultivation' && (
           <div className="bg-white rounded-2xl shadow-lg p-8">
             <div className="mb-6">
@@ -539,7 +712,7 @@ const EditParcelle = () => {
                 </select>
               </div>
 
-              {/* Culture */}
+              {/* Culture - CASCADE PARENT */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Culture <span className="text-red-500">*</span>
@@ -559,7 +732,7 @@ const EditParcelle = () => {
                 </select>
               </div>
 
-              {/* Variété */}
+              {/* Variété - CASCADE CHILD OF CULTURE */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Variété
@@ -567,19 +740,26 @@ const EditParcelle = () => {
                 <select
                   value={formData.codvar}
                   onChange={(e) => handleInputChange('codvar', e.target.value)}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none transition-all"
-                  disabled={optionsLoading}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none transition-all disabled:bg-gray-50 disabled:text-gray-400"
+                  disabled={optionsLoading || !formData.numcul}
                 >
-                  <option value="">Sélectionner une variété</option>
-                  {varietes.map(variete => (
+                  <option value="">
+                    {!formData.numcul ? 'Sélectionnez d\'abord une culture' : 'Sélectionner une variété'}
+                  </option>
+                  {cascadingOptions.filteredVarietes.map(variete => (
                     <option key={variete.codvar} value={variete.codvar}>
                       {variete.nomvar || variete.codvar}
                     </option>
                   ))}
                 </select>
+                {!formData.numcul && (
+                  <p className="text-xs text-gray-500 mt-1">
+                    Veuillez d'abord sélectionner une culture
+                  </p>
+                )}
               </div>
 
-              {/* Sous-Variété */}
+              {/* Sous-Variété - CASCADE CHILD OF VARIÉTÉ */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Sous-Variété
@@ -587,16 +767,23 @@ const EditParcelle = () => {
                 <select
                   value={formData.codsvar}
                   onChange={(e) => handleInputChange('codsvar', e.target.value)}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none transition-all"
-                  disabled={optionsLoading}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none transition-all disabled:bg-gray-50 disabled:text-gray-400"
+                  disabled={optionsLoading || !formData.codvar}
                 >
-                  <option value="">Sélectionner une sous-variété</option>
-                  {sousVarietes.map(sousVariete => (
+                  <option value="">
+                    {!formData.codvar ? 'Sélectionnez d\'abord une variété' : 'Sélectionner une sous-variété'}
+                  </option>
+                  {cascadingOptions.filteredSousVarietes.map(sousVariete => (
                     <option key={sousVariete.codsvar} value={sousVariete.codsvar}>
                       {sousVariete.nomsvar || sousVariete.codsvar}
                     </option>
                   ))}
                 </select>
+                {!formData.codvar && (
+                  <p className="text-xs text-gray-500 mt-1">
+                    Veuillez d'abord sélectionner une variété
+                  </p>
+                )}
               </div>
 
               {/* Date de plantation */}
@@ -612,6 +799,9 @@ const EditParcelle = () => {
                 />
               </div>
             </div>
+
+            <NavigationButtons />
+
           </div>
         )}
 
@@ -703,22 +893,34 @@ const EditParcelle = () => {
             </div>
 
             {/* Action Buttons - Only show on the last tab */}
-            <div className="flex space-x-4 mt-8 pt-6 border-t border-gray-200">
+            <div className="flex justify-between items-center mt-8 pt-6 border-t border-gray-200">
               <button
-                onClick={handleSubmit}
-                disabled={isSubmitting || refError || optionsLoading}
-                className="flex items-center space-x-2 bg-primary-600 text-white px-6 py-2.5 rounded-lg font-medium hover:bg-primary-700 disabled:bg-primary-400 disabled:cursor-not-allowed transition-colors"
+                onClick={handlePrevious}
+                disabled={!canGoPrevious()}
+                className="flex items-center space-x-2 text-gray-600 hover:text-black px-6 py-2.5 rounded-lg border border-gray-300 hover:border-gray-400 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
-                <Save size={18} />
-                <span>{isSubmitting ? 'Mise à jour...' : 'Mettre à jour'}</span>
+                <ChevronLeft size={18} />
+                <span>Retour</span>
               </button>
-              <button
-                onClick={handleCancel}
-                className="flex items-center space-x-2 text-gray-600 hover:text-black px-6 py-2.5 rounded-lg border border-gray-300 hover:border-gray-400 transition-colors"
-              >
-                <X size={18} />
-                <span>Annuler</span>
-              </button>
+
+              <div className="flex space-x-4">
+                <button
+                  onClick={handleSubmit}
+                  disabled={isSubmitting || refError || optionsLoading}
+                  className="flex items-center space-x-2 bg-primary-600 text-white px-6 py-2.5 rounded-lg font-medium hover:bg-primary-700 disabled:bg-primary-400 disabled:cursor-not-allowed transition-colors"
+                >
+                  <Save size={18} />
+                  <span>{isSubmitting ? 'Mise à jour...' : 'Mettre à jour'}</span>
+                </button>
+                <button
+                  onClick={handleCancel}
+                  className="flex items-center space-x-2 text-gray-600 hover:text-black px-6 py-2.5 rounded-lg border border-gray-300 hover:border-gray-400 transition-colors"
+                >
+                  <X size={18} />
+                  <span>Annuler</span>
+                </button>
+              </div>
+
             </div>
           </div>
         )}

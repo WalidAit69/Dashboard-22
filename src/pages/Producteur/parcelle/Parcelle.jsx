@@ -19,11 +19,11 @@ function Parcelle() {
     // Filter states
     const [filters, setFilters] = useState({
         codsvar: '',
-        codvar: '',
+        codvar: [],
         refver: '',
-        codcul: ''
+        codcul: []
     });
-
+    
     // Fetch parcelles data
     const fetchData = async () => {
         try {
@@ -81,17 +81,41 @@ function Parcelle() {
     const filteredParcelles = useMemo(() => {
         let filtered = parcelles;
 
+        // Handle multi-select culture filter
+        if (filters.codcul && Array.isArray(filters.codcul) && filters.codcul.length > 0) {
+            filtered = filtered.filter(p => {
+                // The parcelle data shows numcul: 100, so we should check numcul field
+                const parcelleCodeCul = p.numcul;
+                // Convert both to numbers for proper comparison
+                const match = parcelleCodeCul != null && filters.codcul.includes(Number(parcelleCodeCul));
+                return match;
+            });
+        }
+
+        // Handle multi-select variete filter
+        if (filters.codvar && Array.isArray(filters.codvar) && filters.codvar.length > 0) {
+            filtered = filtered.filter(p => {
+                // The parcelle data shows codvar: 141, so we should check codvar field
+                const match = p.codvar != null && filters.codvar.includes(Number(p.codvar));
+                return match;
+            });
+        }
+
+        // Single-select filters
         if (filters.codsvar) {
-            filtered = filtered.filter(p => p.codsvar != null && p.codsvar.toString() === filters.codsvar.toString());
+            filtered = filtered.filter(p => {
+                // The parcelle data shows codsvar: 13, so we should check codsvar field
+                const match = p.codsvar != null && Number(p.codsvar) === Number(filters.codsvar);
+                return match;
+            });
         }
-        if (filters.codvar) {
-            filtered = filtered.filter(p => p.codvar != null && p.codvar.toString() === filters.codvar.toString());
-        }
+
         if (filters.refver) {
-            filtered = filtered.filter(p => p.refver != null && p.refver.toString() === filters.refver.toString());
-        }
-        if (filters.codcul) {
-            filtered = filtered.filter(p => p.numcul != null && p.numcul.toString() === filters.codcul.toString());
+            filtered = filtered.filter(p => {
+                // The parcelle data shows refver: 1201, so we should check refver field
+                const match = p.refver != null && Number(p.refver) === Number(filters.refver);
+                return match;
+            });
         }
 
         return filtered;
@@ -99,6 +123,7 @@ function Parcelle() {
 
     // Handle filter changes
     const handleFilterChange = (filterKey, value) => {
+        console.log(`Filter change: ${filterKey} = `, value);
         setFilters(prev => ({
             ...prev,
             [filterKey]: value
@@ -109,15 +134,20 @@ function Parcelle() {
     const clearAllFilters = () => {
         setFilters({
             codsvar: '',
-            codvar: '',
+            codvar: [],
             refver: '',
-            codcul: ''
+            codcul: []
         });
     };
 
     // Check if any filters are active
-    const hasActiveFilters = Object.values(filters).some(value => value !== '');
-
+    const hasActiveFilters = Object.values(filters).some(value => {
+        if (Array.isArray(value)) {
+            return value.length > 0;
+        }
+        return value !== '';
+    });
+    
     // Calculate analytics based on filtered parcelles data
     const calculateAnalytics = () => {
         if (!filteredParcelles.length) {

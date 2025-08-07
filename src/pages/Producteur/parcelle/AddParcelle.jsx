@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { User, MapPin, TreePine, Settings, Info, Save, X, ChevronLeft } from 'lucide-react';
+import { MapPin, TreePine, Settings, Info, Save, X, ChevronLeft } from 'lucide-react';
 import API from '../../../utils/Api';
 import { useNavigate } from 'react-router-dom';
 
@@ -7,16 +7,21 @@ const AddParcelle = () => {
   const [activeTab, setActiveTab] = useState('General');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitMessage, setSubmitMessage] = useState('');
-  const [isCheckingRef, setIsCheckingRef] = useState(false);
   const [refError, setRefError] = useState('');
   const navigate = useNavigate();
 
   // State for dropdown options
   const [vergers, setVergers] = useState([]);
   const [cultures, setCultures] = useState([]);
-  const [sousVarietes, setSousVarietes] = useState([]);
-  const [varietes, setVarietes] = useState([]);
   const [optionsLoading, setOptionsLoading] = useState(false);
+
+  // State for cascading dropdown options
+  const [cascadingOptions, setCascadingOptions] = useState({
+    allVarietes: [], // Store all varietes for filtering
+    allSousVarietes: [], // Store all sous-varietes for filtering
+    filteredVarietes: [], // Current filtered varietes
+    filteredSousVarietes: [] // Current filtered sous-varietes
+  });
 
   const [formData, setFormData] = useState({
     refpar: '',
@@ -51,17 +56,24 @@ const AddParcelle = () => {
     try {
       setOptionsLoading(true);
 
-      const [vergersRes, culturesRes, sousVarietesRes, varietesRes] = await Promise.all([
+      const [vergersRes, culturesRes, varietesRes, sousVarietesRes] = await Promise.all([
         API.get("/Vergers"),
         API.get("/Cultures"),
-        API.get("/SousVarietes"),
         API.get("/Varietes"),
+        API.get("/SousVarietes"),
       ]);
 
       setVergers(Array.isArray(vergersRes.data) ? vergersRes.data : []);
       setCultures(Array.isArray(culturesRes.data) ? culturesRes.data : []);
-      setSousVarietes(Array.isArray(sousVarietesRes.data) ? sousVarietesRes.data : []);
-      setVarietes(Array.isArray(varietesRes.data) ? varietesRes.data : []);
+
+      // Store all varietes and sous-varietes for cascading filtering
+      setCascadingOptions(prev => ({
+        ...prev,
+        allVarietes: Array.isArray(varietesRes.data) ? varietesRes.data : [],
+        allSousVarietes: Array.isArray(sousVarietesRes.data) ? sousVarietesRes.data : [],
+        filteredVarietes: [],
+        filteredSousVarietes: []
+      }));
     } catch (error) {
       console.error('Error fetching options:', error);
     } finally {
@@ -74,51 +86,84 @@ const AddParcelle = () => {
     fetchOptions();
   }, []);
 
-  // Function to check if reference already exists
-  const checkReferenceExists = async (refId) => {
-    if (!refId || refId.trim() === '') {
-      setRefError('');
-      return;
-    }
+  // Handle cascading dropdown changes
+  const handleCascadingChange = (field, value) => {
+    if (field === 'numcul') {
+      // When culture changes, filter varietes and clear dependent fields
+      setFormData(prev => ({
+        ...prev,
+        numcul: value,
+        codvar: '', // Clear variety
+        codsvar: '' // Clear sub-variety
+      }));
 
-    setIsCheckingRef(true);
-    setRefError('');
+      if (value) {
+        // Filter varietes by selected culture
+        const filteredVarietes = cascadingOptions.allVarietes.filter(v =>
+          v.codcul && Number(v.codcul) === Number(value)
+        );
 
-    try {
-      const response = await API.get(`/Parcelles`);
-      const parcelles = Array.isArray(response.data) ? response.data : [];
-
-      // Check if reference exists
-      const existingParcelle = parcelles.find(p => p.idparcelle.toString() === refId.trim());
-
-      if (existingParcelle) {
-        setRefError('ID est déjà utilisée');
+        setCascadingOptions(prev => ({
+          ...prev,
+          filteredVarietes,
+          filteredSousVarietes: [] // Clear sous-varietes when culture changes
+        }));
+      } else {
+        // Clear all filtered options when no culture is selected
+        setCascadingOptions(prev => ({
+          ...prev,
+          filteredVarietes: [],
+          filteredSousVarietes: []
+        }));
       }
-    } catch (err) {
-      console.error('Error checking reference:', err);
-      setRefError('Erreur lors de la vérification de la référence');
-    } finally {
-      setIsCheckingRef(false);
+    } else if (field === 'codvar') {
+      // When variety changes, filter sous-varietes
+      setFormData(prev => ({
+        ...prev,
+        codvar: value,
+        codsvar: '' // Clear sub-variety
+      }));
+
+      if (value) {
+        // Filter sous-varietes by selected variety
+        const filteredSousVarietes = cascadingOptions.allSousVarietes.filter(sv =>
+          sv.codvar && Number(sv.codvar) === Number(value)
+        );
+
+        setCascadingOptions(prev => ({
+          ...prev,
+          filteredSousVarietes
+        }));
+      } else {
+        // Clear sous-varietes when no variety is selected
+        setCascadingOptions(prev => ({
+          ...prev,
+          filteredSousVarietes: []
+        }));
+      }
+    } else if (field === 'codsvar') {
+      // Simple field update for sous-variety
+      setFormData(prev => ({
+        ...prev,
+        codsvar: value
+      }));
     }
   };
 
   const handleInputChange = (field, value) => {
-    setFormData(prev => ({
-      ...prev,
-      [field]: value
-    }));
+    // Check if this is a cascading field
+    if (field === 'numcul' || field === 'codvar' || field === 'codsvar') {
+      handleCascadingChange(field, value);
+    } else {
+      setFormData(prev => ({
+        ...prev,
+        [field]: value
+      }));
+    }
 
     // Clear reference error when user starts typing a new reference
     if (field === 'refpar') {
       setRefError('');
-    }
-  };
-
-  // Handle blur event for reference field
-  const handleReferenceBlur = () => {
-    const refValue = formData.idparcelle.trim();
-    if (refValue) {
-      checkReferenceExists(refValue);
     }
   };
 
@@ -210,6 +255,54 @@ const AddParcelle = () => {
     navigate("/parcelle");
   };
 
+  const getCurrentTabIndex = () => {
+    return tabs.findIndex(tab => tab.id === activeTab);
+  };
+
+  const canGoNext = () => {
+    return getCurrentTabIndex() < tabs.length - 1;
+  };
+
+  const canGoPrevious = () => {
+    return getCurrentTabIndex() > 0;
+  };
+
+  const handleNext = () => {
+    const currentIndex = getCurrentTabIndex();
+    if (currentIndex < tabs.length - 1) {
+      setActiveTab(tabs[currentIndex + 1].id);
+    }
+  };
+
+  const handlePrevious = () => {
+    const currentIndex = getCurrentTabIndex();
+    if (currentIndex > 0) {
+      setActiveTab(tabs[currentIndex - 1].id);
+    }
+  };
+
+  const NavigationButtons = () => (
+    <div className="flex justify-between items-center mt-8 pt-6 border-t border-gray-200">
+      <button
+        onClick={handlePrevious}
+        disabled={!canGoPrevious()}
+        className="flex items-center space-x-2 text-gray-600 hover:text-black px-6 py-2.5 rounded-lg border border-gray-300 hover:border-gray-400 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+      >
+        <ChevronLeft size={18} />
+        <span>Retour</span>
+      </button>
+
+      <button
+        onClick={handleNext}
+        disabled={!canGoNext()}
+        className="flex items-center space-x-2 bg-primary-600 text-white px-6 py-2.5 rounded-lg font-medium hover:bg-primary-700 disabled:bg-primary-400 disabled:cursor-not-allowed transition-colors"
+      >
+        <span>Suivant</span>
+        <ChevronLeft size={18} className="rotate-180" />
+      </button>
+    </div>
+  );
+
   return (
     <div className="min-h-screen">
       <div className="max-w-7xl mx-auto p-6">
@@ -263,32 +356,6 @@ const AddParcelle = () => {
             )}
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* ID Parcelle */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  ID Parcelle <span className="text-red-500">*</span>
-                </label>
-                <div className="relative">
-                  <input
-                    type="number"
-                    min="0"
-                    value={formData.idparcelle}
-                    onChange={(e) => handleInputChange('idparcelle', e.target.value)}
-                    onBlur={handleReferenceBlur}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none transition-all"
-                    placeholder="ID numérique de la parcelle"
-                  />
-                  {isCheckingRef && (
-                    <div className="absolute right-3 top-3">
-                      <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-primary-600"></div>
-                    </div>
-                  )}
-                </div>
-                {refError && (
-                  <p className="mt-1 text-sm text-red-600">{refError}</p>
-                )}
-              </div>
-
               {/* Reference Parcelle */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -350,6 +417,8 @@ const AddParcelle = () => {
                 />
               </div>
             </div>
+
+            <NavigationButtons />
           </div>
         )}
 
@@ -422,10 +491,12 @@ const AddParcelle = () => {
                 />
               </div>
             </div>
+
+            <NavigationButtons />
           </div>
         )}
 
-        {/* Cultivation Tab Content */}
+        {/* Cultivation Tab Content - WITH CASCADING DROPDOWNS */}
         {activeTab === 'Cultivation' && (
           <div className="bg-white rounded-2xl shadow-lg p-8">
             <div className="mb-6">
@@ -454,7 +525,7 @@ const AddParcelle = () => {
                 </select>
               </div>
 
-              {/* Culture */}
+              {/* Culture - CASCADE PARENT */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Culture <span className="text-red-500">*</span>
@@ -474,7 +545,7 @@ const AddParcelle = () => {
                 </select>
               </div>
 
-              {/* Variété */}
+              {/* Variété - CASCADE CHILD OF CULTURE */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Variété
@@ -482,19 +553,26 @@ const AddParcelle = () => {
                 <select
                   value={formData.codvar}
                   onChange={(e) => handleInputChange('codvar', e.target.value)}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none transition-all"
-                  disabled={optionsLoading}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none transition-all disabled:bg-gray-50 disabled:text-gray-400"
+                  disabled={optionsLoading || !formData.numcul}
                 >
-                  <option value="">Sélectionner une variété</option>
-                  {varietes.map(variete => (
+                  <option value="">
+                    {!formData.numcul ? 'Sélectionnez d\'abord une culture' : 'Sélectionner une variété'}
+                  </option>
+                  {cascadingOptions.filteredVarietes.map(variete => (
                     <option key={variete.codvar} value={variete.codvar}>
                       {variete.nomvar || variete.codvar}
                     </option>
                   ))}
                 </select>
+                {!formData.numcul && (
+                  <p className="text-xs text-gray-500 mt-1">
+                    Veuillez d'abord sélectionner une culture
+                  </p>
+                )}
               </div>
 
-              {/* Sous-Variété */}
+              {/* Sous-Variété - CASCADE CHILD OF VARIÉTÉ */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Sous-Variété
@@ -502,16 +580,23 @@ const AddParcelle = () => {
                 <select
                   value={formData.codsvar}
                   onChange={(e) => handleInputChange('codsvar', e.target.value)}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none transition-all"
-                  disabled={optionsLoading}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none transition-all disabled:bg-gray-50 disabled:text-gray-400"
+                  disabled={optionsLoading || !formData.codvar}
                 >
-                  <option value="">Sélectionner une sous-variété</option>
-                  {sousVarietes.map(sousVariete => (
+                  <option value="">
+                    {!formData.codvar ? 'Sélectionnez d\'abord une variété' : 'Sélectionner une sous-variété'}
+                  </option>
+                  {cascadingOptions.filteredSousVarietes.map(sousVariete => (
                     <option key={sousVariete.codsvar} value={sousVariete.codsvar}>
                       {sousVariete.nomsvar || sousVariete.codsvar}
                     </option>
                   ))}
                 </select>
+                {!formData.codvar && (
+                  <p className="text-xs text-gray-500 mt-1">
+                    Veuillez d'abord sélectionner une variété
+                  </p>
+                )}
               </div>
 
               {/* Date de plantation */}
@@ -527,6 +612,8 @@ const AddParcelle = () => {
                 />
               </div>
             </div>
+
+            <NavigationButtons />
           </div>
         )}
 
@@ -618,22 +705,34 @@ const AddParcelle = () => {
             </div>
 
             {/* Action Buttons - Only show on the last tab */}
-            <div className="flex space-x-4 mt-8 pt-6 border-t border-gray-200">
+            <div className="flex justify-between items-center mt-8 pt-6 border-t border-gray-200">
               <button
-                onClick={handleSubmit}
-                disabled={isSubmitting || refError || optionsLoading}
-                className="flex items-center space-x-2 bg-primary-600 text-white px-6 py-2.5 rounded-lg font-medium hover:bg-primary-700 disabled:bg-primary-400 disabled:cursor-not-allowed transition-colors"
+                onClick={handlePrevious}
+                disabled={!canGoPrevious()}
+                className="flex items-center space-x-2 text-gray-600 hover:text-black px-6 py-2.5 rounded-lg border border-gray-300 hover:border-gray-400 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
-                <Save size={18} />
-                <span>{isSubmitting ? 'Enregistrement...' : 'Enregistrer'}</span>
+                <ChevronLeft size={18} />
+                <span>Retour</span>
               </button>
-              <button
-                onClick={handleCancel}
-                className="flex items-center space-x-2 text-gray-600 hover:text-black px-6 py-2.5 rounded-lg border border-gray-300 hover:border-gray-400 transition-colors"
-              >
-                <X size={18} />
-                <span>Annuler</span>
-              </button>
+
+              <div className="flex space-x-4">
+                <button
+                  onClick={handleSubmit}
+                  disabled={isSubmitting || refError || optionsLoading}
+                  className="flex items-center space-x-2 bg-primary-600 text-white px-6 py-2.5 rounded-lg font-medium hover:bg-primary-700 disabled:bg-primary-400 disabled:cursor-not-allowed transition-colors"
+                >
+                  <Save size={18} />
+                  <span>{isSubmitting ? 'Enregistrement...' : 'Enregistrer'}</span>
+                </button>
+                <button
+                  onClick={handleCancel}
+                  className="flex items-center space-x-2 text-gray-600 hover:text-black px-6 py-2.5 rounded-lg border border-gray-300 hover:border-gray-400 transition-colors"
+                >
+                  <X size={18} />
+                  <span>Annuler</span>
+                </button>
+              </div>
+
             </div>
           </div>
         )}

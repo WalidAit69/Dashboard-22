@@ -1,9 +1,10 @@
 import { useState, useMemo, useEffect } from 'react';
-import { ChevronDown, Download, Plus, Trash2, Eye, ChevronLeft, ChevronRight, Search, Pen, X, SidebarOpen, SidebarClose } from 'lucide-react';
+import { ChevronDown, Download, Plus, Trash2, Eye, ChevronLeft, ChevronRight, Search, Pen, X } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import API from "../../utils/Api";
 import Loader from '../ui/Loader';
 import ConfirmationModal from '../producteur/ConfirmationModal';
+import MultiSelectListbox from '../../components/parcelle/MultiSelectListbox';
 
 const ParcelleTable = ({
     initialData = [],
@@ -19,7 +20,22 @@ const ParcelleTable = ({
     const [couvertureFilter, setCouvertureFilter] = useState('');
     const [itemsPerPage, setItemsPerPage] = useState(10);
     const [currentPage, setCurrentPage] = useState(1);
-    const [sidebarOpen, setSidebarOpen] = useState(false);
+
+    // State for cascading filters
+    const [cascadingFilters, setCascadingFilters] = useState({
+        codcul: [],
+        codgrpvar: '',
+        codvar: [],
+        codsvar: ''
+    });
+
+    // State for cascading filter options
+    const [cascadingOptions, setCascadingOptions] = useState({
+        cultures: filterOptions.cultures || [],
+        groupeVarietes: [],
+        varietes: [],
+        sousVarietes: []
+    });
 
     // State for delete modal
     const [deleteModal, setDeleteModal] = useState({
@@ -27,6 +43,182 @@ const ParcelleTable = ({
         parcelle: null,
         loading: false
     });
+
+    // Update cascading filters when filterOptions change
+    useEffect(() => {
+        setCascadingOptions(prev => ({
+            ...prev,
+            cultures: filterOptions.cultures || []
+        }));
+    }, [filterOptions.cultures]);
+
+    const handleCascadingFilterChange = async (filterType, value) => {
+        console.log(`Filter change: ${filterType} = ${value}`); // Debug log
+
+        // Update the filter value
+        const newFilters = { ...cascadingFilters };
+
+        if (filterType === 'codcul') {
+            newFilters.codcul = value;
+            newFilters.codgrpvar = '';
+            newFilters.codvar = [];
+            newFilters.codsvar = '';
+
+            // Fetch dependent data when culture(s) are selected
+            if (value && value.length > 0) {
+                try {
+                    console.log(`Fetching GroupeVarietes and Varietes for cultures: ${value}`);
+
+                    const [groupeVarietesResponse, varietesResponse] = await Promise.all([
+                        API.get(`/GroupVarietes`),
+                        API.get(`/Varietes`)
+                    ]);
+
+                    console.log('All GroupeVarietes:', groupeVarietesResponse.data);
+                    console.log('All Varietes:', varietesResponse.data);
+
+                    // Convert value array to numbers for consistent comparison
+                    const selectedCultureCodes = value.map(v => Number(v));
+
+                    // Filter by selected cultures (multiple values) - FIXED: consistent type conversion
+                    const filteredGroupeVarietes = groupeVarietesResponse.data?.filter(gv => {
+                        console.log(`Checking GroupeVariete: ${gv.codgrpvar}, numcul: ${gv.codcul} vs selected: ${selectedCultureCodes}`);
+                        return gv.codcul && selectedCultureCodes.includes(Number(gv.codcul));
+                    }) || [];
+
+                    const filteredVarietes = varietesResponse.data?.filter(v => {
+                        console.log(`Checking Variete: ${v.codvar}, numcul: ${v.codcul} vs selected: ${selectedCultureCodes}`);
+                        return v.codcul && selectedCultureCodes.includes(Number(v.codcul));
+                    }) || [];
+
+                    console.log('Filtered GroupeVarietes:', filteredGroupeVarietes);
+                    console.log('Filtered Varietes:', filteredVarietes);
+
+                    setCascadingOptions(prev => ({
+                        ...prev,
+                        groupeVarietes: filteredGroupeVarietes, // FIXED: use filtered data instead of all data
+                        varietes: filteredVarietes,
+                        sousVarietes: []
+                    }));
+                } catch (error) {
+                    console.error('Error fetching groupe varietes and varietes:', error);
+                    setCascadingOptions(prev => ({
+                        ...prev,
+                        groupeVarietes: [],
+                        varietes: [],
+                        sousVarietes: []
+                    }));
+                }
+            } else {
+                // Clear all dependent options when no culture is selected
+                setCascadingOptions(prev => ({
+                    ...prev,
+                    groupeVarietes: [],
+                    varietes: [],
+                    sousVarietes: []
+                }));
+            }
+        }
+        else if (filterType === 'codgrpvar') {
+            newFilters.codgrpvar = value;
+            newFilters.codvar = [];
+            newFilters.codsvar = '';
+
+            // Filter existing varietes by selected groupe variete
+            if (value) {
+                // Use the already filtered varietes from culture selection
+                const filteredVarietes = cascadingOptions.varietes?.filter(v => {
+                    console.log(`Filtering Variete by GroupeVariete: ${v.codvar}, codgrpvar: ${v.codgrpvar} vs selected: ${value}`);
+                    return v.codgrpvar && Number(v.codgrpvar) === Number(value); // FIXED: consistent number comparison
+                }) || [];
+
+                console.log('Varietes filtered by GroupeVariete:', filteredVarietes);
+
+                setCascadingOptions(prev => ({
+                    ...prev,
+                    varietes: filteredVarietes,
+                    sousVarietes: []
+                }));
+            } else {
+                // If no groupe variete selected, show all varietes for the selected cultures
+                if (cascadingFilters.codcul && cascadingFilters.codcul.length > 0) {
+                    try {
+                        const varietesResponse = await API.get(`/Varietes`);
+                        const selectedCultureCodes = cascadingFilters.codcul.map(v => Number(v));
+                        const filteredVarietes = varietesResponse.data?.filter(v =>
+                            v.numcul && selectedCultureCodes.includes(Number(v.numcul)) // FIXED: use numcul and consistent comparison
+                        ) || [];
+
+                        setCascadingOptions(prev => ({
+                            ...prev,
+                            varietes: filteredVarietes,
+                            sousVarietes: []
+                        }));
+                    } catch (error) {
+                        console.error('Error re-fetching varietes:', error);
+                    }
+                }
+            }
+        }
+        else if (filterType === 'codvar') {
+            newFilters.codvar = value;
+            newFilters.codsvar = '';
+
+            // Fetch all sous varietes when variete(s) are selected
+            if (value && value.length > 0) {
+                try {
+                    console.log(`Fetching SousVarietes for varietes: ${value}`);
+                    const response = await API.get(`/SousVarietes`);
+                    console.log('All SousVarietes:', response.data);
+
+                    // Convert value array to numbers for consistent comparison
+                    const selectedVarieteCodes = value.map(v => Number(v));
+
+                    // Filter by selected varietes (multiple values)
+                    const filteredSousVarietes = response.data?.filter(sv => {
+                        console.log(`Checking SousVariete: ${sv.codsvar}, codvar: ${sv.codvar} vs selected: ${selectedVarieteCodes}`);
+                        return sv.codvar && selectedVarieteCodes.includes(Number(sv.codvar)); // FIXED: consistent number comparison
+                    }) || [];
+
+                    console.log('Filtered SousVarietes:', filteredSousVarietes);
+
+                    setCascadingOptions(prev => ({
+                        ...prev,
+                        sousVarietes: filteredSousVarietes
+                    }));
+                } catch (error) {
+                    console.error('Error fetching sous varietes:', error);
+                    setCascadingOptions(prev => ({
+                        ...prev,
+                        sousVarietes: []
+                    }));
+                }
+            } else {
+                // Clear sous varietes when no variete is selected
+                setCascadingOptions(prev => ({
+                    ...prev,
+                    sousVarietes: []
+                }));
+            }
+        }
+        else if (filterType === 'codsvar') {
+            newFilters.codsvar = value;
+        }
+
+        console.log('New cascading filters:', newFilters);
+        setCascadingFilters(newFilters);
+
+        // Notify parent component of filter changes
+        if (onFilterChange) {
+            onFilterChange(filterType, value);
+        }
+    };
+
+    // Also add debugging to see the current state
+    useEffect(() => {
+        console.log('Cascading filters state:', cascadingFilters);
+        console.log('Cascading options state:', cascadingOptions);
+    }, [cascadingFilters, cascadingOptions]);
 
     // Delete parcelle function
     const handleDelete = async () => {
@@ -83,11 +275,14 @@ const ParcelleTable = ({
             const matchesCertif = !certifFilter || parcelle.certif === certifFilter;
             const matchesCouverture = !couvertureFilter || parcelle.couverture === couvertureFilter;
 
-            return matchesSearch && matchesTraite && matchesCertif && matchesCouverture;
-        });
-    }, [initialData, searchTerm, traiteFilter, certifFilter, couvertureFilter]);
+            // Vergers filter (from parent filters)
+            const matchesVerger = !filters.refver || parcelle.refver === filters.refver;
 
-    
+            return matchesSearch && matchesTraite && matchesCertif && matchesCouverture && matchesVerger;
+        });
+    }, [initialData, searchTerm, traiteFilter, certifFilter, couvertureFilter, cascadingFilters, filters.refver]);
+
+
     // Pagination logic
     const totalPages = Math.ceil(filteredParcelles.length / itemsPerPage);
     const startIndex = (currentPage - 1) * itemsPerPage;
@@ -96,7 +291,7 @@ const ParcelleTable = ({
     // Reset pagination when filters change
     useEffect(() => {
         setCurrentPage(1);
-    }, [searchTerm, traiteFilter, certifFilter, couvertureFilter, initialData]);
+    }, [searchTerm, traiteFilter, certifFilter, couvertureFilter, cascadingFilters]);
 
     const getBooleanBadge = (value) => {
         const styles = {
@@ -130,27 +325,52 @@ const ParcelleTable = ({
         return `${parseFloat(lat).toFixed(4)}, ${parseFloat(lng).toFixed(4)}`;
     };
 
-    // Check if any advanced filters are active
-    const hasActiveAdvancedFilters = Object.values(filters || {}).some(value => value !== '');
     const hasActiveTableFilters = traiteFilter || certifFilter || couvertureFilter;
-    const hasAnyActiveFilters = hasActiveAdvancedFilters || hasActiveTableFilters;
+    const hasActiveCascadingFilters = cascadingFilters.codcul.length > 0 || cascadingFilters.codvar.length > 0 || cascadingFilters.codsvar;
+    const hasAnyActiveFilters = hasActiveTableFilters || hasActiveCascadingFilters;
+
+    // Clear all filters function
+    const clearAllFilters = () => {
+        setTraiteFilter('');
+        setCertifFilter('');
+        setCouvertureFilter('');
+        setCascadingFilters({
+            codcul: '',
+            codgrpvar: '',
+            codvar: '',
+            codsvar: ''
+        });
+        setCascadingOptions(prev => ({
+            ...prev,
+            groupeVarietes: [],
+            varietes: [],
+            sousVarietes: []
+        }));
+        // Clear vergers filter
+        if (onFilterChange) {
+            onFilterChange('refver', '');
+        }
+    };
+
+    const cultureOptions = cascadingOptions.cultures?.map(c => ({
+        value: c.codcul,
+        label: c.nomcul || c.codcul
+    })) || [];
+
+    const varieteOptions = cascadingOptions.varietes?.map(v => ({
+        value: v.codvar,
+        label: v.nomvar || v.codvar
+    })) || [];
 
     return (
         <>
-            <div className="flex min-h-screen">
-                {/* Sidebar */}
-                <div className={`fixed inset-y-0 left-0 z-[60] w-80 bg-white shadow-lg transform transition-transform duration-300 ease-in-out ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'
-                    }`}>
+            <div className="flex min-h-screen gap-6">
+                {/* Filter Sidebar */}
+                <div className="w-80 bg-white shadow-sm border border-gray-200 rounded-lg h-fit">
                     <div className="flex flex-col h-full">
                         {/* Sidebar Header */}
                         <div className="flex items-center justify-between p-4 border-b border-gray-200">
-                            <h2 className="text-lg font-semibold text-gray-900">Filtres avancés</h2>
-                            <button
-                                onClick={() => setSidebarOpen(false)}
-                                className="p-2 rounded-md text-gray-400 hover:text-gray-600 hover:bg-gray-100"
-                            >
-                                <X className="w-5 h-5" />
-                            </button>
+                            <h2 className="text-lg font-semibold text-gray-900">Filtres</h2>
                         </div>
 
                         {/* Sidebar Content */}
@@ -218,23 +438,33 @@ const ParcelleTable = ({
                                         </div>
                                     </div>
 
-                                    {/* Advanced Filters */}
+                                    {/* Specialized Cascading Filters */}
                                     <div>
                                         <h3 className="text-sm font-medium text-gray-900 mb-3">Filtres spécialisés</h3>
                                         <div className="space-y-4">
-                                            {/* Sous-Variétés Filter */}
+                                            {/* Culture Filter */}
+                                            <MultiSelectListbox
+                                                label="Culture"
+                                                options={cultureOptions}
+                                                selectedValues={cascadingFilters.codcul}
+                                                onChange={(values) => handleCascadingFilterChange('codcul', values)}
+                                                placeholder="Toutes les cultures"
+                                            />
+
+                                            {/* Groupe Variété Filter */}
                                             <div>
-                                                <label className="block text-xs font-medium text-gray-700 mb-1">Sous-Variétés</label>
+                                                <label className="block text-xs font-medium text-gray-700 mb-1">Groupe Variété</label>
                                                 <div className="relative">
                                                     <select
-                                                        value={filters.codsvar || ''}
-                                                        onChange={(e) => onFilterChange && onFilterChange('codsvar', e.target.value)}
-                                                        className="w-full px-3 py-2 border border-gray-200 rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent appearance-none"
+                                                        value={cascadingFilters.codgrv}
+                                                        onChange={(e) => handleCascadingFilterChange('codgrpvar', e.target.value)}
+                                                        disabled={cascadingFilters.codcul.length === 0}
+                                                        className="w-full px-3 py-2 border border-gray-200 rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent appearance-none disabled:bg-gray-50 disabled:text-gray-400"
                                                     >
-                                                        <option value="">Toutes les sous-variétés</option>
-                                                        {filterOptions.sousVarietes?.map((sv) => (
-                                                            <option key={sv.codsvar} value={sv.codsvar}>
-                                                                {sv.nomsvar || sv.codsvar}
+                                                        <option value="">Tous les groupes variétés</option>
+                                                        {cascadingOptions.groupeVarietes?.map((gv) => (
+                                                            <option key={gv.codgrv} value={gv.codgrv}>
+                                                                {gv.nomgrv || gv.codgrv}
                                                             </option>
                                                         ))}
                                                     </select>
@@ -242,19 +472,31 @@ const ParcelleTable = ({
                                                 </div>
                                             </div>
 
-                                            {/* Variétés Filter */}
+                                            {/* Variété Filter */}
+                                            <MultiSelectListbox
+                                                label="Variété"
+                                                options={varieteOptions}
+                                                selectedValues={cascadingFilters.codvar}
+                                                onChange={(values) => handleCascadingFilterChange('codvar', values)}
+                                                disabled={cascadingFilters.codcul.length === 0}
+                                                placeholder="Toutes les variétés"
+                                            />
+
+
+                                            {/* Sous-Variété Filter */}
                                             <div>
-                                                <label className="block text-xs font-medium text-gray-700 mb-1">Variétés</label>
+                                                <label className="block text-xs font-medium text-gray-700 mb-1">Sous-Variété</label>
                                                 <div className="relative">
                                                     <select
-                                                        value={filters.codvar || ''}
-                                                        onChange={(e) => onFilterChange && onFilterChange('codvar', e.target.value)}
-                                                        className="w-full px-3 py-2 border border-gray-200 rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent appearance-none"
+                                                        value={cascadingFilters.codsvar}
+                                                        onChange={(e) => handleCascadingFilterChange('codsvar', e.target.value)}
+                                                        disabled={cascadingFilters.codvar.length === 0}
+                                                        className="w-full px-3 py-2 border border-gray-200 rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent appearance-none disabled:bg-gray-50 disabled:text-gray-400"
                                                     >
-                                                        <option value="">Toutes les variétés</option>
-                                                        {filterOptions.varietes?.map((v) => (
-                                                            <option key={v.codvar} value={v.codvar}>
-                                                                {v.nomvar || v.codvar}
+                                                        <option value="">Toutes les sous-variétés</option>
+                                                        {cascadingOptions.sousVarietes?.map((sv) => (
+                                                            <option key={sv.codsvar} value={sv.codsvar}>
+                                                                {sv.nomsvar || sv.codsvar}
                                                             </option>
                                                         ))}
                                                     </select>
@@ -281,26 +523,6 @@ const ParcelleTable = ({
                                                     <ChevronDown className="absolute right-2 top-3 w-4 h-4 text-gray-400 pointer-events-none" />
                                                 </div>
                                             </div>
-
-                                            {/* Cultures Filter */}
-                                            <div>
-                                                <label className="block text-xs font-medium text-gray-700 mb-1">Cultures</label>
-                                                <div className="relative">
-                                                    <select
-                                                        value={filters.codcul || ''}
-                                                        onChange={(e) => onFilterChange && onFilterChange('codcul', e.target.value)}
-                                                        className="w-full px-3 py-2 border border-gray-200 rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent appearance-none"
-                                                    >
-                                                        <option value="">Toutes les cultures</option>
-                                                        {filterOptions.cultures?.map((c) => (
-                                                            <option key={c.codcul} value={c.codcul}>
-                                                                {c.nomcul || c.codcul}
-                                                            </option>
-                                                        ))}
-                                                    </select>
-                                                    <ChevronDown className="absolute right-2 top-3 w-4 h-4 text-gray-400 pointer-events-none" />
-                                                </div>
-                                            </div>
                                         </div>
                                     </div>
 
@@ -310,97 +532,69 @@ const ParcelleTable = ({
                                             <div className="flex items-center justify-between mb-2">
                                                 <span className="text-sm font-medium text-blue-900">Filtres actifs:</span>
                                                 <button
-                                                    onClick={() => {
-                                                        // Clear basic filters
-                                                        setTraiteFilter('');
-                                                        setCertifFilter('');
-                                                        setCouvertureFilter('');
-
-                                                        // Clear advanced filters
-                                                        if (onFilterChange) {
-                                                            onFilterChange('codsvar', '');
-                                                            onFilterChange('codvar', '');
-                                                            onFilterChange('refver', '');
-                                                            onFilterChange('codcul', '');
-                                                        }
-                                                    }}
+                                                    onClick={clearAllFilters}
                                                     className="text-xs text-blue-600 hover:text-blue-800 underline"
                                                 >
                                                     Effacer tous
                                                 </button>
                                             </div>
                                             <div className="flex flex-wrap gap-2">
-                                                {traiteFilter && (
+                                                {/* Multi-select Culture filter tags */}
+                                                {cascadingFilters.codcul.map(codcul => {
+                                                    const culture = cultureOptions.find(c => c.value === codcul);
+                                                    return (
+                                                        <span key={codcul} className="inline-flex items-center gap-1 px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">
+                                                            Culture: {culture?.label || codcul}
+                                                            <button
+                                                                onClick={() => {
+                                                                    const newValues = cascadingFilters.codcul.filter(v => v !== codcul);
+                                                                    handleCascadingFilterChange('codcul', newValues);
+                                                                }}
+                                                                className="hover:text-blue-900"
+                                                            >
+                                                                <X className="w-3 h-3" />
+                                                            </button>
+                                                        </span>
+                                                    );
+                                                })}
+
+                                                {/* Multi-select Variete filter tags */}
+                                                {cascadingFilters.codvar.map(codvar => {
+                                                    const variete = varieteOptions.find(v => v.value === codvar);
+                                                    return (
+                                                        <span key={codvar} className="inline-flex items-center gap-1 px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">
+                                                            Variété: {variete?.label || codvar}
+                                                            <button
+                                                                onClick={() => {
+                                                                    const newValues = cascadingFilters.codvar.filter(v => v !== codvar);
+                                                                    handleCascadingFilterChange('codvar', newValues);
+                                                                }}
+                                                                className="hover:text-blue-900"
+                                                            >
+                                                                <X className="w-3 h-3" />
+                                                            </button>
+                                                        </span>
+                                                    );
+                                                })}
+
+                                                {/* Single-select filters (keeping original logic) */}
+                                                {cascadingFilters.codsvar && (
                                                     <span className="inline-flex items-center gap-1 px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">
-                                                        Traitement: {traiteFilter === 'OUI' ? 'Traité' : 'Non traité'}
+                                                        Sous-Variété: {cascadingFilters.codsvar}
                                                         <button
-                                                            onClick={() => setTraiteFilter('')}
+                                                            onClick={() => handleCascadingFilterChange('codsvar', '')}
                                                             className="hover:text-blue-900"
                                                         >
                                                             <X className="w-3 h-3" />
                                                         </button>
                                                     </span>
                                                 )}
-                                                {certifFilter && (
-                                                    <span className="inline-flex items-center gap-1 px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">
-                                                        Certification: {certifFilter === 'OUI' ? 'Certifié' : 'Non certifié'}
-                                                        <button
-                                                            onClick={() => setCertifFilter('')}
-                                                            className="hover:text-blue-900"
-                                                        >
-                                                            <X className="w-3 h-3" />
-                                                        </button>
-                                                    </span>
-                                                )}
-                                                {couvertureFilter && (
-                                                    <span className="inline-flex items-center gap-1 px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">
-                                                        Couverture: {couvertureFilter === 'O' ? 'Avec' : 'Sans'}
-                                                        <button
-                                                            onClick={() => setCouvertureFilter('')}
-                                                            className="hover:text-blue-900"
-                                                        >
-                                                            <X className="w-3 h-3" />
-                                                        </button>
-                                                    </span>
-                                                )}
-                                                {filters.codsvar && (
-                                                    <span className="inline-flex items-center gap-1 px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">
-                                                        Sous-variété: {filters.codsvar}
-                                                        <button
-                                                            onClick={() => onFilterChange && onFilterChange('codsvar', '')}
-                                                            className="hover:text-blue-900"
-                                                        >
-                                                            <X className="w-3 h-3" />
-                                                        </button>
-                                                    </span>
-                                                )}
-                                                {filters.codvar && (
-                                                    <span className="inline-flex items-center gap-1 px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">
-                                                        Variété: {filters.codvar}
-                                                        <button
-                                                            onClick={() => onFilterChange && onFilterChange('codvar', '')}
-                                                            className="hover:text-blue-900"
-                                                        >
-                                                            <X className="w-3 h-3" />
-                                                        </button>
-                                                    </span>
-                                                )}
+
                                                 {filters.refver && (
                                                     <span className="inline-flex items-center gap-1 px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">
                                                         Verger: {filters.refver}
                                                         <button
                                                             onClick={() => onFilterChange && onFilterChange('refver', '')}
-                                                            className="hover:text-blue-900"
-                                                        >
-                                                            <X className="w-3 h-3" />
-                                                        </button>
-                                                    </span>
-                                                )}
-                                                {filters.codcul && (
-                                                    <span className="inline-flex items-center gap-1 px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">
-                                                        Culture: {filters.codcul}
-                                                        <button
-                                                            onClick={() => onFilterChange && onFilterChange('codcul', '')}
                                                             className="hover:text-blue-900"
                                                         >
                                                             <X className="w-3 h-3" />
@@ -416,41 +610,11 @@ const ParcelleTable = ({
                     </div>
                 </div>
 
-                {/* Sidebar Overlay */}
-                {sidebarOpen && (
-                    <div
-                        className="fixed inset-0 z-[50] bg-black bg-opacity-50"
-                        onClick={() => setSidebarOpen(false)}
-                    />
-                )}
-
                 {/* Main Content */}
                 <div className="flex-1 min-w-0">
                     <div className="bg-white rounded-lg shadow-sm border border-gray-200">
                         {/* Header */}
                         <div className="p-6 border-b border-gray-200">
-                            {/* Filters Toggle Button */}
-                            <div className="mb-4">
-                                <button
-                                    onClick={() => setSidebarOpen(!sidebarOpen)}
-                                    className="flex items-center gap-2 px-3 py-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-md transition-colors"
-                                >
-                                    {sidebarOpen ? (
-                                        <SidebarClose className="w-4 h-4" />
-                                    ) : (
-                                        <SidebarOpen className="w-4 h-4" />
-                                    )}
-                                    <span className="text-sm font-medium">
-                                        {sidebarOpen ? 'Masquer les filtres' : 'Afficher les filtres'}
-                                    </span>
-                                    {hasAnyActiveFilters && (
-                                        <span className="text-xs text-blue-600 bg-blue-50 px-2 py-1 rounded-full">
-                                            {Object.values({ ...filters, traiteFilter, certifFilter, couvertureFilter }).filter(v => v !== '').length} actifs
-                                        </span>
-                                    )}
-                                </button>
-                            </div>
-
                             {/* Search and Actions */}
                             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                                 <div className="relative">
