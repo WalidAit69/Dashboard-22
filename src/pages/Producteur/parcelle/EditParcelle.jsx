@@ -72,7 +72,7 @@ const EditParcelle = () => {
 
       setVergers(Array.isArray(vergersRes.data) ? vergersRes.data : []);
       setCultures(Array.isArray(culturesRes.data) ? culturesRes.data : []);
-      
+
       // Store all varietes and sous-varietes for cascading filtering
       setCascadingOptions(prev => ({
         ...prev,
@@ -90,19 +90,19 @@ const EditParcelle = () => {
   // Initialize cascading filters based on existing data
   const initializeCascadingFilters = (parcelleData) => {
     const { numcul, codvar } = parcelleData;
-    
+
     if (numcul && cascadingOptions.allVarietes.length > 0) {
       // Filter varietes by culture
-      const filteredVarietes = cascadingOptions.allVarietes.filter(v => 
+      const filteredVarietes = cascadingOptions.allVarietes.filter(v =>
         v.codcul && Number(v.codcul) === Number(numcul)
       );
-      
+
       if (codvar && cascadingOptions.allSousVarietes.length > 0) {
         // Filter sous-varietes by variety
-        const filteredSousVarietes = cascadingOptions.allSousVarietes.filter(sv => 
+        const filteredSousVarietes = cascadingOptions.allSousVarietes.filter(sv =>
           sv.codvar && Number(sv.codvar) === Number(codvar)
         );
-        
+
         setCascadingOptions(prev => ({
           ...prev,
           filteredVarietes,
@@ -216,6 +216,8 @@ const EditParcelle = () => {
     }
   };
 
+  console.log(cascadingOptions)
+
   // Handle cascading dropdown changes
   const handleCascadingChange = (field, value) => {
     if (field === 'numcul') {
@@ -229,10 +231,10 @@ const EditParcelle = () => {
 
       if (value) {
         // Filter varietes by selected culture
-        const filteredVarietes = cascadingOptions.allVarietes.filter(v => 
+        const filteredVarietes = cascadingOptions.allVarietes.filter(v =>
           v.numcul && Number(v.numcul) === Number(value)
         );
-        
+
         setCascadingOptions(prev => ({
           ...prev,
           filteredVarietes,
@@ -256,10 +258,10 @@ const EditParcelle = () => {
 
       if (value) {
         // Filter sous-varietes by selected variety
-        const filteredSousVarietes = cascadingOptions.allSousVarietes.filter(sv => 
+        const filteredSousVarietes = cascadingOptions.allSousVarietes.filter(sv =>
           sv.codvar && Number(sv.codvar) === Number(value)
         );
-        
+
         setCascadingOptions(prev => ({
           ...prev,
           filteredSousVarietes

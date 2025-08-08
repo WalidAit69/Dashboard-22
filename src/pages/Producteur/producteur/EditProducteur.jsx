@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { User, Shield, CreditCard, Bell, Link, Save, X, ChevronLeft } from 'lucide-react';
+import { User, Save, X, ChevronLeft, Leaf, TreePine } from 'lucide-react';
 import API from '../../../utils/Api';
 import Loader from '../../../components/ui/Loader';
+import AddProdVerger from './AddProdVerger';
+import AddProdParcelle from './AddProdParcelle';
 
 const EditProducteur = () => {
     const params = useParams();
@@ -19,6 +21,10 @@ const EditProducteur = () => {
     // State for type options
     const [typeOptions, setTypeOptions] = useState([]);
     const [typeOptionsLoading, setTypeOptionsLoading] = useState(false);
+
+    // States for verger
+    const [ProducteurID, setProducteurID] = useState();
+    const [vergers, setVergers] = useState([]);
 
     const [formData, setFormData] = useState({
         refadh: '',
@@ -38,11 +44,9 @@ const EditProducteur = () => {
     });
 
     const tabs = [
-        { id: 'Account', label: 'Account', icon: User },
-        { id: 'Security', label: 'Security', icon: Shield },
-        { id: 'Billing & Plans', label: 'Billing & Plans', icon: CreditCard },
-        { id: 'Notifications', label: 'Notifications', icon: Bell },
-        { id: 'Connections', label: 'Connections', icon: Link }
+        { id: 'Account', label: 'General', icon: User },
+        { id: 'Verger', label: 'Verger', icon: TreePine },
+        { id: 'Parcelle', label: 'Parcelle', icon: Leaf },
     ];
 
     // Fetch type options
@@ -102,7 +106,7 @@ const EditProducteur = () => {
             const response = await API.get(`/Adherents/${params.id}`);
             const adherentData = response.data;
 
-            console.log(adherentData)
+            setProducteurID(adherentData.refadh)
             // Update form data with fetched adherent data
             setFormData({
                 refadh: adherentData.refadh || '',
@@ -136,6 +140,32 @@ const EditProducteur = () => {
             fetchAdherent();
         }
     }, [params.id]);
+
+    // Fetching verger
+    const fetchVerger = async () => {
+        try {
+            setLoading(true);
+            setError(null);
+
+            const res = await API.get(`/Vergers/ByAdherent/${ProducteurID}`);
+
+            if (res.data && Array.isArray(res.data)) {
+                setVergers(res.data);
+            } else {
+                setVergers(res.data ? [res.data] : []);
+            }
+        } catch (error) {
+            console.error('Error fetching vergers:', error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        if (ProducteurID) {
+            fetchVerger();
+        }
+    }, [ProducteurID]);
 
     const handleInputChange = (field, value) => {
         setFormData(prev => ({
@@ -394,20 +424,6 @@ const EditProducteur = () => {
                                     </div>
                                 </div>
 
-                                {/* Adherent Field - Added this field */}
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                                        Adhérent <span className="text-red-500">*</span>
-                                    </label>
-                                    <input
-                                        type="text"
-                                        value={formData.adherent}
-                                        onChange={(e) => handleInputChange('adherent', e.target.value)}
-                                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none transition-all"
-                                        placeholder="Nom de l'adhérent"
-                                    />
-                                </div>
-
                                 {/* Nom Producteur */}
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -613,16 +629,47 @@ const EditProducteur = () => {
                     </>
                 )}
 
-                {/* Other Tab Placeholders */}
-                {activeTab !== 'Account' && (
+                {/* Verger */}
+                {activeTab === 'Verger' && (
                     <div className="bg-white rounded-2xl shadow-lg p-8">
-                        <div className="text-center py-12">
-                            <h3 className="text-xl font-semibold text-gray-900 mb-2">
-                                {activeTab} Settings
-                            </h3>
-                            <p className="text-gray-600">
-                                Cette section sera bientôt disponible. Cliquez sur Account pour voir le formulaire principal.
-                            </p>
+                        <div className="mb-8">
+                            <AddProdVerger
+                                producteurID={ProducteurID}
+                                onSuccess={() => {
+                                    setSubmitMessage('');
+                                    fetchVerger();
+                                }}
+                                onCancel={() => {
+                                    setSubmitMessage('');
+                                }}
+                                isSubmitting={isSubmitting}
+                                setIsSubmitting={setIsSubmitting}
+                                submitMessage={submitMessage}
+                                setSubmitMessage={setSubmitMessage}
+                            />
+                        </div>
+                    </div>
+                )}
+
+                {/* Parcelle */}
+                {activeTab === 'Parcelle' && (
+                    <div className="bg-white rounded-2xl shadow-lg p-8">
+                        <div className="mb-8">
+                            <AddProdParcelle
+                                producteurID={ProducteurID}
+                                onSuccess={() => {
+                                    setSubmitMessage('');
+                                    fetchVerger();
+                                }}
+                                onCancel={() => {
+                                    setSubmitMessage('');
+                                }}
+                                isSubmitting={isSubmitting}
+                                setIsSubmitting={setIsSubmitting}
+                                submitMessage={submitMessage}
+                                setSubmitMessage={setSubmitMessage}
+                                vergers={vergers}
+                            />
                         </div>
                     </div>
                 )}

@@ -16,12 +16,27 @@ function Parcelle() {
     const [error, setError] = useState(null);
     const [filtersLoading, setFiltersLoading] = useState(false);
 
-    // Filter states
     const [filters, setFilters] = useState({
-        codsvar: '',
-        codvar: [],
+        // Table basic filters
+        searchTerm: '',
+        traite: '',
+        certif: '',
+        couverture: '',
+        
+        // Specialized filters (Filtres spécialisés)
         refver: '',
-        codcul: []
+        codcul: [],
+        codgrpvar: '',
+        codvar: [],
+        codsvar: ''
+    });
+
+    // Cascading filter options state
+    const [cascadingOptions, setCascadingOptions] = useState({
+        cultures: [],
+        groupeVarietes: [],
+        varietes: [],
+        sousVarietes: []
     });
     
     // Fetch parcelles data
@@ -65,6 +80,12 @@ function Parcelle() {
             setCultures(Array.isArray(culturesRes.data) ? culturesRes.data : []);
             setSousVarietes(Array.isArray(sousVarietesRes.data) ? sousVarietesRes.data : []);
             setVarietes(Array.isArray(varietesRes.data) ? varietesRes.data : []);
+
+            // Initialize cascading options with cultures
+            setCascadingOptions(prev => ({
+                ...prev,
+                cultures: Array.isArray(culturesRes.data) ? culturesRes.data : []
+            }));
         } catch (error) {
             console.error('Error fetching filter data:', error);
         } finally {
@@ -77,16 +98,221 @@ function Parcelle() {
         fetchFilterData();
     }, []);
 
-    // Apply advanced filters (Filtres spécialisés) - memoized for performance
+    // Handle cascading filter logic
+    const handleCascadingFilterChange = async (filterType, value) => {
+        console.log(`Filter change: ${filterType} = ${value}`);
+
+        // Update the filter value
+        const newFilters = { ...filters };
+
+        if (filterType === 'codcul') {
+            newFilters.codcul = value;
+            newFilters.codgrpvar = '';
+            newFilters.codvar = [];
+            newFilters.codsvar = '';
+
+            // Fetch dependent data when culture(s) are selected
+            if (value && value.length > 0) {
+                try {
+                    console.log(`Fetching GroupeVarietes and Varietes for cultures: ${value}`);
+
+                    const [groupeVarietesResponse, varietesResponse] = await Promise.all([
+                        API.get(`/GroupVarietes`),
+                        API.get(`/Varietes`)
+                    ]);
+
+                    console.log('All GroupeVarietes:', groupeVarietesResponse.data);
+                    console.log('All Varietes:', varietesResponse.data);
+
+                    // Convert value array to numbers for consistent comparison
+                    const selectedCultureCodes = value.map(v => Number(v));
+
+                    // Filter by selected cultures
+                    const filteredGroupeVarietes = groupeVarietesResponse.data?.filter(gv => {
+                        console.log(`Checking GroupeVariete: ${gv.codgrpvar}, numcul: ${gv.codcul} vs selected: ${selectedCultureCodes}`);
+                        return gv.codcul && selectedCultureCodes.includes(Number(gv.codcul));
+                    }) || [];
+
+                    const filteredVarietes = varietesResponse.data?.filter(v => {
+                        console.log(`Checking Variete: ${v.codvar}, numcul: ${v.codcul} vs selected: ${selectedCultureCodes}`);
+                        return v.codcul && selectedCultureCodes.includes(Number(v.codcul));
+                    }) || [];
+
+                    console.log('Filtered GroupeVarietes:', filteredGroupeVarietes);
+                    console.log('Filtered Varietes:', filteredVarietes);
+
+                    setCascadingOptions(prev => ({
+                        ...prev,
+                        groupeVarietes: filteredGroupeVarietes,
+                        varietes: filteredVarietes,
+                        sousVarietes: []
+                    }));
+                } catch (error) {
+                    console.error('Error fetching groupe varietes and varietes:', error);
+                    setCascadingOptions(prev => ({
+                        ...prev,
+                        groupeVarietes: [],
+                        varietes: [],
+                        sousVarietes: []
+                    }));
+                }
+            } else {
+                // Clear all dependent options when no culture is selected
+                setCascadingOptions(prev => ({
+                    ...prev,
+                    groupeVarietes: [],
+                    varietes: [],
+                    sousVarietes: []
+                }));
+            }
+        }
+        else if (filterType === 'codgrpvar') {
+            newFilters.codgrpvar = value;
+            newFilters.codvar = [];
+            newFilters.codsvar = '';
+
+            // Filter existing varietes by selected groupe variete
+            if (value) {
+                // Use the already filtered varietes from culture selection
+                const filteredVarietes = cascadingOptions.varietes?.filter(v => {
+                    console.log(`Filtering Variete by GroupeVariete: ${v.codvar}, codgrpvar: ${v.codgrpvar} vs selected: ${value}`);
+                    return v.codgrpvar && Number(v.codgrpvar) === Number(value);
+                }) || [];
+
+                console.log('Varietes filtered by GroupeVariete:', filteredVarietes);
+
+                setCascadingOptions(prev => ({
+                    ...prev,
+                    varietes: filteredVarietes,
+                    sousVarietes: []
+                }));
+            } else {
+                // If no groupe variete selected, show all varietes for the selected cultures
+                if (filters.codcul && filters.codcul.length > 0) {
+                    try {
+                        const varietesResponse = await API.get(`/Varietes`);
+                        const selectedCultureCodes = filters.codcul.map(v => Number(v));
+                        const filteredVarietes = varietesResponse.data?.filter(v =>
+                            v.codcul && selectedCultureCodes.includes(Number(v.codcul))
+                        ) || [];
+
+                        setCascadingOptions(prev => ({
+                            ...prev,
+                            varietes: filteredVarietes,
+                            sousVarietes: []
+                        }));
+                    } catch (error) {
+                        console.error('Error re-fetching varietes:', error);
+                    }
+                }
+            }
+        }
+        else if (filterType === 'codvar') {
+            newFilters.codvar = value;
+            newFilters.codsvar = '';
+
+            // Fetch sous varietes when variete(s) are selected
+            if (value && value.length > 0) {
+                try {
+                    console.log(`Fetching SousVarietes for varietes: ${value}`);
+                    const response = await API.get(`/SousVarietes`);
+                    console.log('All SousVarietes:', response.data);
+
+                    // Convert value array to numbers for consistent comparison
+                    const selectedVarieteCodes = value.map(v => Number(v));
+
+                    // Filter by selected varietes
+                    const filteredSousVarietes = response.data?.filter(sv => {
+                        console.log(`Checking SousVariete: ${sv.codsvar}, codvar: ${sv.codvar} vs selected: ${selectedVarieteCodes}`);
+                        return sv.codvar && selectedVarieteCodes.includes(Number(sv.codvar));
+                    }) || [];
+
+                    console.log('Filtered SousVarietes:', filteredSousVarietes);
+
+                    setCascadingOptions(prev => ({
+                        ...prev,
+                        sousVarietes: filteredSousVarietes
+                    }));
+                } catch (error) {
+                    console.error('Error fetching sous varietes:', error);
+                    setCascadingOptions(prev => ({
+                        ...prev,
+                        sousVarietes: []
+                    }));
+                }
+            } else {
+                // Clear sous varietes when no variete is selected
+                setCascadingOptions(prev => ({
+                    ...prev,
+                    sousVarietes: []
+                }));
+            }
+        }
+        else if (filterType === 'codsvar') {
+            newFilters.codsvar = value;
+        }
+
+        console.log('New filters:', newFilters);
+        setFilters(newFilters);
+    };
+
+    // Handle basic filter changes
+    const handleFilterChange = (filterKey, value) => {
+        console.log(`Basic filter change: ${filterKey} = `, value);
+        
+        if (filterKey === 'codcul' || filterKey === 'codgrpvar' || filterKey === 'codvar' || filterKey === 'codsvar') {
+            // Handle cascading filters
+            handleCascadingFilterChange(filterKey, value);
+        } else {
+            // Handle basic filters
+            setFilters(prev => ({
+                ...prev,
+                [filterKey]: value
+            }));
+        }
+    };
+
+    // Apply ALL filters - consolidated filtering logic
     const filteredParcelles = useMemo(() => {
         let filtered = parcelles;
+
+        // Basic search filter
+        if (filters.searchTerm) {
+            filtered = filtered.filter(parcelle => {
+                const searchLower = filters.searchTerm.toLowerCase();
+                return (
+                    (parcelle.refpar?.toLowerCase().includes(searchLower) || false) ||
+                    (parcelle.latitude?.toString().includes(filters.searchTerm) || false) ||
+                    (parcelle.longitude?.toString().includes(filters.searchTerm) || false) ||
+                    (parcelle.irriga?.toLowerCase().includes(searchLower) || false)
+                );
+            });
+        }
+
+        // Basic table filters
+        if (filters.traite) {
+            filtered = filtered.filter(p => p.traite === filters.traite);
+        }
+
+        if (filters.certif) {
+            filtered = filtered.filter(p => p.certif === filters.certif);
+        }
+
+        if (filters.couverture) {
+            filtered = filtered.filter(p => p.couverture === filters.couverture);
+        }
+
+        // Specialized filters
+        if (filters.refver) {
+            filtered = filtered.filter(p => {
+                return p.refver != null && Number(p.refver) === Number(filters.refver);
+            });
+        }
 
         // Handle multi-select culture filter
         if (filters.codcul && Array.isArray(filters.codcul) && filters.codcul.length > 0) {
             filtered = filtered.filter(p => {
-                // The parcelle data shows numcul: 100, so we should check numcul field
                 const parcelleCodeCul = p.numcul;
-                // Convert both to numbers for proper comparison
                 const match = parcelleCodeCul != null && filters.codcul.includes(Number(parcelleCodeCul));
                 return match;
             });
@@ -95,7 +321,6 @@ function Parcelle() {
         // Handle multi-select variete filter
         if (filters.codvar && Array.isArray(filters.codvar) && filters.codvar.length > 0) {
             filtered = filtered.filter(p => {
-                // The parcelle data shows codvar: 141, so we should check codvar field
                 const match = p.codvar != null && filters.codvar.includes(Number(p.codvar));
                 return match;
             });
@@ -104,16 +329,15 @@ function Parcelle() {
         // Single-select filters
         if (filters.codsvar) {
             filtered = filtered.filter(p => {
-                // The parcelle data shows codsvar: 13, so we should check codsvar field
                 const match = p.codsvar != null && Number(p.codsvar) === Number(filters.codsvar);
                 return match;
             });
         }
 
-        if (filters.refver) {
+        if (filters.codgrpvar) {
             filtered = filtered.filter(p => {
-                // The parcelle data shows refver: 1201, so we should check refver field
-                const match = p.refver != null && Number(p.refver) === Number(filters.refver);
+                // Assuming there's a codgrpvar field in parcelle data
+                const match = p.codgrpvar != null && Number(p.codgrpvar) === Number(filters.codgrpvar);
                 return match;
             });
         }
@@ -121,23 +345,27 @@ function Parcelle() {
         return filtered;
     }, [parcelles, filters]);
 
-    // Handle filter changes
-    const handleFilterChange = (filterKey, value) => {
-        console.log(`Filter change: ${filterKey} = `, value);
-        setFilters(prev => ({
-            ...prev,
-            [filterKey]: value
-        }));
-    };
-
     // Clear all filters
     const clearAllFilters = () => {
         setFilters({
-            codsvar: '',
-            codvar: [],
+            searchTerm: '',
+            traite: '',
+            certif: '',
+            couverture: '',
             refver: '',
-            codcul: []
+            codcul: [],
+            codgrpvar: '',
+            codvar: [],
+            codsvar: ''
         });
+
+        // Reset cascading options
+        setCascadingOptions(prev => ({
+            ...prev,
+            groupeVarietes: [],
+            varietes: [],
+            sousVarietes: []
+        }));
     };
 
     // Check if any filters are active
@@ -293,13 +521,14 @@ function Parcelle() {
                     </div>
                 </div>
 
-                {/* Parcelle Table with integrated filters */}
+                {/* Parcelle Table with all filters managed by parent */}
                 <div className='sm:px-6'>
                     <ParcelleTable
-                        initialData={filteredParcelles}
+                        filteredData={filteredParcelles}
                         onRefresh={fetchData}
                         filters={filters}
                         onFilterChange={handleFilterChange}
+                        cascadingOptions={cascadingOptions}
                         filterOptions={{
                             vergers,
                             cultures,
@@ -307,6 +536,8 @@ function Parcelle() {
                             varietes
                         }}
                         filtersLoading={filtersLoading}
+                        hasActiveFilters={hasActiveFilters}
+                        clearAllFilters={clearAllFilters}
                     />
                 </div>
             </div>
