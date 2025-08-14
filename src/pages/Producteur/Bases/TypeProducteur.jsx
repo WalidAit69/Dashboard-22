@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Plus, Search, Edit2, Trash2, AlertCircle, Loader2 } from 'lucide-react';
 import API from "../../../utils/Api";
-import { Modal } from "../../../components/ui/Modal";
+import Modal from "../../../components/ui/Modal";
 
 function TypeProducteur() {
     const [typeProducteurs, setTypeProducteurs] = useState([]);

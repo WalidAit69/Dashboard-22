@@ -1,6 +1,6 @@
 import { useRef, useEffect } from "react";
 
-export const Modal = ({
+ const Modal = ({
     isOpen,
     onClose,
     children,
@@ -83,3 +83,4 @@ export const Modal = ({
         </div>
     );
 };
+export default Modal;

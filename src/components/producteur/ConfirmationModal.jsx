@@ -1,5 +1,5 @@
 import { Loader2, Trash2, AlertTriangle, Info, CheckCircle } from 'lucide-react';
-import { Modal } from '../ui/Modal';
+import Modal from '../ui/Modal';
 
 const ConfirmationModal = ({
     isOpen,

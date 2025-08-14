@@ -252,6 +252,24 @@ const Sidebar = () => {
                                             isCollapsed={isCollapsed && !isHovered}
                                         />
                                     </Link>
+                                    <Link to="/certificat" onClick={closeSidebar}>
+                                        <MenuItem
+                                            icon={FileText}
+                                            label="Certificats"
+                                            isSubItem={true}
+                                            isActive={isActive('/certificat')}
+                                            isCollapsed={isCollapsed && !isHovered}
+                                        />
+                                    </Link>
+                                    <Link to="/organisme" onClick={closeSidebar}>
+                                        <MenuItem
+                                            icon={Building}
+                                            label="Organismes"
+                                            isSubItem={true}
+                                            isActive={isActive('/organisme')}
+                                            isCollapsed={isCollapsed && !isHovered}
+                                        />
+                                    </Link>
                                     <Link to="/base" onClick={closeSidebar}>
                                         <MenuItem
                                             icon={Layers}

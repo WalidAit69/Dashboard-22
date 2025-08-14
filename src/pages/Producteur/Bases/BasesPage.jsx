@@ -1,8 +1,9 @@
 import { useState } from 'react';
-import { Users, TreePine, FileText, Menu, X } from 'lucide-react';
+import { Users, TreePine, FileText, Menu, X, Shield } from 'lucide-react';
 import TypeProducteur from './TypeProducteur';
 import PorteGreffe from './PorteGreffe';
 import Protocole from './Protocoles';
+import TypeCertificat from './TypeCertificat';
 
 function BasesPage() {
     const [activeTab, setActiveTab] = useState('typeProducteur');
@@ -12,6 +13,7 @@ function BasesPage() {
         { id: 'typeProducteur', label: 'Type de Producteur', icon: Users },
         { id: 'porteGreffe', label: 'Porte Greffe', icon: TreePine },
         { id: 'protocole', label: 'Protocole', icon: FileText },
+        { id: 'typeCertificat', label: 'Type de Certificat', icon: Shield },
     ];
 
     const handleTabChange = (tabId) => {
@@ -27,6 +29,8 @@ function BasesPage() {
                 return <PorteGreffe />;
             case 'protocole':
                 return <Protocole />;
+            case 'typeCertificat':
+                return <TypeCertificat />;
             default:
                 return (
                     <div className="p-4 sm:p-6">

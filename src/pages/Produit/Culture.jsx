@@ -1,7 +1,7 @@
 import { Edit, Trash2, Plus, AlertCircle, Loader2 } from "lucide-react"
 import { useEffect, useState } from "react";
 import API from "../../utils/Api";
-import { Modal } from "../../components/ui/Modal";
+import Modal from "../../components/ui/Modal";
 
 
 function Culture() {

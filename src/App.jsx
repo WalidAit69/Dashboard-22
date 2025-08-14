@@ -21,6 +21,8 @@ import Parcelle from "./pages/Producteur/parcelle/Parcelle";
 import AddParcelle from "./pages/Producteur/parcelle/AddParcelle";
 import EditParcelle from "./pages/Producteur/parcelle/EditParcelle";
 import ParcelleDetail from "./pages/Producteur/parcelle/ParcelleDetail";
+import CertificatPage from "./pages/Producteur/certificat/CertificatPage";
+import OrganismePage from "./pages/Producteur/certificat/OrganismePage";
 
 function App() {
   return (
@@ -57,6 +59,8 @@ function App() {
 
 
               <Route path="/declaration-verger" element={<DeclarationVerger />} />
+              <Route path="/certificat" element={<CertificatPage />} />
+              <Route path="/organisme" element={<OrganismePage />} />
               <Route path="/base" element={<BasesPage />} />
               <Route path="/type-producteur" element={<TypeProducteur />} />
 
