@@ -156,6 +156,8 @@ const CertificatModal = ({ isOpen, onClose, onSave, certificat }) => {
                 dateAudit: formData.dateAudit || null
             };
 
+            console.log(dataToSave)
+
             if (certificat) {
                 dataToSave.idCertificat = certificat.idCertificat;
             }
@@ -169,7 +171,7 @@ const CertificatModal = ({ isOpen, onClose, onSave, certificat }) => {
     };
 
     return (
-        <Modal isOpen={isOpen} onClose={onClose} size="lg">
+        <Modal isOpen={isOpen} onClose={onClose} className="max-w-5xl">
             <div className="flex items-center justify-between p-6 border-b border-gray-200">
                 <div className="flex items-center gap-3">
                     <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">

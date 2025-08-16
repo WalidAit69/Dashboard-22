@@ -15,9 +15,8 @@ const VergerService = {
     // Récupérer tous les vergers
     getAllVergers: async (includeInactifs = false) => {
         try {
-            const response = await API.get('/Verger', {
-                params: { includeInactifs }
-            });
+            const response = await API.get('/Vergers');
+            console.log('Réponse de la récupération des vergers:', response.data);
             return response.data;
         } catch (error) {
             console.error('Erreur lors de la récupération des vergers:', error);
