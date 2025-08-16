@@ -1,6 +1,5 @@
 import { Users, UserCheck, Activity, Clock } from 'lucide-react';
-import AnalyticsCard from '../components/dashboard/AnalyticsCard';
-import UserManagementTable from '../components/dashboard/UserManagementTable';
+import AnalyticsCard from '../components/Gestion/dashboard/AnalyticsCard';
 
 function Dashboard() {
 

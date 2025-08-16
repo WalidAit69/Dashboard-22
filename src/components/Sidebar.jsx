@@ -13,13 +13,18 @@ import {
     Building,
     Menu,
     X,
-    ChevronLeft
+    ChevronLeft,
+    BarChart3,
+    TrendingUp,
+    PieChart
 } from 'lucide-react';
 import MenuItem from './ui/MenuItem';
 import DropdownSection from './ui/DropdownSection';
 
 const Sidebar = () => {
     const [expandedSections, setExpandedSections] = useState({
+        gestion: false,
+        analytics: false,
         producteur: false,
         produit: false
     });
@@ -52,6 +57,10 @@ const Sidebar = () => {
 
     const isActive = (path) => {
         return location.pathname === path;
+    };
+
+    const isPathActive = (basePath) => {
+        return location.pathname.startsWith(basePath);
     };
 
     return (
@@ -157,125 +166,196 @@ const Sidebar = () => {
                             />
                         </Link>
 
-                        <Link to="/reception" onClick={closeSidebar}>
-                            <MenuItem
-                                icon={UserCheck}
-                                label="Reception"
-                                isActive={isActive('/reception')}
-                                isCollapsed={isCollapsed && !isHovered}
-                            />
-                        </Link>
-
-                        <Link to="/export" onClick={closeSidebar}>
-                            <MenuItem
-                                icon={FileText}
-                                label="Export"
-                                isActive={isActive('/export')}
-                                isCollapsed={isCollapsed && !isHovered}
-                            />
-                        </Link>
-
-                        <Link to="/ecart" onClick={closeSidebar}>
-                            <MenuItem
-                                icon={ShoppingCart}
-                                label="Ecart"
-                                isActive={isActive('/ecart')}
-                                isCollapsed={isCollapsed && !isHovered}
-                            />
-                        </Link>
-
-                        <Link to="/gestion-utilisateur" onClick={closeSidebar}>
-                            <MenuItem
-                                icon={Users}
-                                label="Gestion utilisateur"
-                                isActive={isActive('/gestion-utilisateur')}
-                                isCollapsed={isCollapsed && !isHovered}
-                            />
-                        </Link>
-
-                        {/* Produit Section */}
-                        <Link to="/produit" onClick={closeSidebar}>
-                            <MenuItem
-                                icon={Package}
-                                label="Produit"
-                                isCollapsed={isCollapsed && !isHovered}
-                                isActive={isActive('/produit')}
-                            />
-                        </Link>
-
-                        {/* Producteur Section */}
+                        {/* Gestion Section */}
                         {(!isCollapsed || isHovered) && (
                             <>
                                 <MenuItem
                                     icon={Users}
-                                    label="Producteur"
+                                    label="Gestion"
                                     hasSubmenu={true}
-                                    isExpanded={expandedSections.producteur}
-                                    onClick={() => toggleSection('producteur')}
+                                    isExpanded={expandedSections.gestion}
+                                    onClick={() => toggleSection('gestion')}
                                     isCollapsed={isCollapsed && !isHovered}
+                                    isActive={isPathActive('/gestion')}
                                 />
 
-                                <DropdownSection isExpanded={expandedSections.producteur} isCollapsed={isCollapsed && !isHovered} >
-                                    <Link to="/producteur" onClick={closeSidebar}>
+                                <DropdownSection isExpanded={expandedSections.gestion} isCollapsed={isCollapsed && !isHovered}>
+                                    <Link to="/gestion/reception" onClick={closeSidebar}>
                                         <MenuItem
-                                            icon={Building}
-                                            label="Producteur"
+                                            icon={UserCheck}
+                                            label="Reception"
                                             isSubItem={true}
-                                            isActive={isActive('/producteur')}
+                                            isActive={isActive('/gestion/reception')}
                                             isCollapsed={isCollapsed && !isHovered}
                                         />
                                     </Link>
-                                    <Link to="/verger" onClick={closeSidebar}>
-                                        <MenuItem
-                                            icon={TreePine}
-                                            label="Verger"
-                                            isSubItem={true}
-                                            isActive={isActive('/verger')}
-                                            isCollapsed={isCollapsed && !isHovered}
-                                        />
-                                    </Link>
-                                    <Link to="/parcelle" onClick={closeSidebar}>
-                                        <MenuItem
-                                            icon={Map}
-                                            label="Parcelle"
-                                            isSubItem={true}
-                                            isActive={isActive('/parcelle')}
-                                            isCollapsed={isCollapsed && !isHovered}
-                                        />
-                                    </Link>
-                                    <Link to="/declaration-verger" onClick={closeSidebar}>
+
+                                    <Link to="/gestion/export" onClick={closeSidebar}>
                                         <MenuItem
                                             icon={FileText}
-                                            label="Declaration Verger"
+                                            label="Export"
                                             isSubItem={true}
-                                            isActive={isActive('/declaration-verger')}
+                                            isActive={isActive('/gestion/export')}
                                             isCollapsed={isCollapsed && !isHovered}
                                         />
                                     </Link>
-                                    <Link to="/certificat" onClick={closeSidebar}>
+
+                                    <Link to="/gestion/ecart" onClick={closeSidebar}>
+                                        <MenuItem
+                                            icon={ShoppingCart}
+                                            label="Ecart"
+                                            isSubItem={true}
+                                            isActive={isActive('/gestion/ecart')}
+                                            isCollapsed={isCollapsed && !isHovered}
+                                        />
+                                    </Link>
+
+                                    <Link to="/gestion/gestion-utilisateur" onClick={closeSidebar}>
+                                        <MenuItem
+                                            icon={Users}
+                                            label="Gestion utilisateur"
+                                            isSubItem={true}
+                                            isActive={isActive('/gestion/gestion-utilisateur')}
+                                            isCollapsed={isCollapsed && !isHovered}
+                                        />
+                                    </Link>
+
+                                    <Link to="/gestion/produit" onClick={closeSidebar}>
+                                        <MenuItem
+                                            icon={Package}
+                                            label="Produit"
+                                            isSubItem={true}
+                                            isActive={isActive('/gestion/produit')}
+                                            isCollapsed={isCollapsed && !isHovered}
+                                        />
+                                    </Link>
+
+                                    {/* Producteur Submenu */}
+                                    <MenuItem
+                                        icon={Users}
+                                        label="Producteur"
+                                        hasSubmenu={true}
+                                        isExpanded={expandedSections.producteur}
+                                        onClick={() => toggleSection('producteur')}
+                                        isCollapsed={isCollapsed && !isHovered}
+                                        isSubItem={true}
+                                        isActive={isPathActive('/gestion/producteur') || isPathActive('/gestion/verger') || isPathActive('/gestion/parcelle')}
+                                    />
+
+                                    <DropdownSection isExpanded={expandedSections.producteur} isCollapsed={isCollapsed && !isHovered} isNested={true}>
+                                        <Link to="/gestion/producteur" onClick={closeSidebar}>
+                                            <MenuItem
+                                                icon={Building}
+                                                label="Producteur"
+                                                isSubItem={true}
+                                                isActive={isActive('/gestion/producteur')}
+                                                isCollapsed={isCollapsed && !isHovered}
+                                                isNested={true}
+                                            />
+                                        </Link>
+                                        <Link to="/gestion/verger" onClick={closeSidebar}>
+                                            <MenuItem
+                                                icon={TreePine}
+                                                label="Verger"
+                                                isSubItem={true}
+                                                isActive={isActive('/gestion/verger')}
+                                                isCollapsed={isCollapsed && !isHovered}
+                                                isNested={true}
+                                            />
+                                        </Link>
+                                        <Link to="/gestion/parcelle" onClick={closeSidebar}>
+                                            <MenuItem
+                                                icon={Map}
+                                                label="Parcelle"
+                                                isSubItem={true}
+                                                isActive={isActive('/gestion/parcelle')}
+                                                isCollapsed={isCollapsed && !isHovered}
+                                                isNested={true}
+                                            />
+                                        </Link>
+                                        <Link to="/gestion/declaration-verger" onClick={closeSidebar}>
+                                            <MenuItem
+                                                icon={FileText}
+                                                label="Declaration Verger"
+                                                isSubItem={true}
+                                                isActive={isActive('/gestion/declaration-verger')}
+                                                isCollapsed={isCollapsed && !isHovered}
+                                                isNested={true}
+                                            />
+                                        </Link>
+                                        <Link to="/gestion/certificat" onClick={closeSidebar}>
+                                            <MenuItem
+                                                icon={FileText}
+                                                label="Certificats"
+                                                isSubItem={true}
+                                                isActive={isActive('/gestion/certificat')}
+                                                isCollapsed={isCollapsed && !isHovered}
+                                                isNested={true}
+                                            />
+                                        </Link>
+                                        <Link to="/gestion/organisme" onClick={closeSidebar}>
+                                            <MenuItem
+                                                icon={Building}
+                                                label="Organismes"
+                                                isSubItem={true}
+                                                isActive={isActive('/gestion/organisme')}
+                                                isCollapsed={isCollapsed && !isHovered}
+                                                isNested={true}
+                                            />
+                                        </Link>
+                                        <Link to="/gestion/base" onClick={closeSidebar}>
+                                            <MenuItem
+                                                icon={Layers}
+                                                label="Base"
+                                                isSubItem={true}
+                                                isActive={isActive('/gestion/base')}
+                                                isCollapsed={isCollapsed && !isHovered}
+                                                isNested={true}
+                                            />
+                                        </Link>
+                                    </DropdownSection>
+                                </DropdownSection>
+                            </>
+                        )}
+
+                        {/* Analytics Section */}
+                        {(!isCollapsed || isHovered) && (
+                            <>
+                                <MenuItem
+                                    icon={BarChart3}
+                                    label="Analytics"
+                                    hasSubmenu={true}
+                                    isExpanded={expandedSections.analytics}
+                                    onClick={() => toggleSection('analytics')}
+                                    isCollapsed={isCollapsed && !isHovered}
+                                    isActive={isPathActive('/analytics')}
+                                />
+
+                                <DropdownSection isExpanded={expandedSections.analytics} isCollapsed={isCollapsed && !isHovered}>
+                                    <Link to="/analytics" onClick={closeSidebar}>
+                                        <MenuItem
+                                            icon={TrendingUp}
+                                            label="Dashboard"
+                                            isSubItem={true}
+                                            isActive={isActive('/analytics') || isActive('/analytics/')}
+                                            isCollapsed={isCollapsed && !isHovered}
+                                        />
+                                    </Link>
+                                    <Link to="/analytics/reports" onClick={closeSidebar}>
                                         <MenuItem
                                             icon={FileText}
-                                            label="Certificats"
+                                            label="Reports"
                                             isSubItem={true}
-                                            isActive={isActive('/certificat')}
+                                            isActive={isActive('/analytics/reports')}
                                             isCollapsed={isCollapsed && !isHovered}
                                         />
                                     </Link>
-                                    <Link to="/organisme" onClick={closeSidebar}>
+                                    <Link to="/analytics/metrics" onClick={closeSidebar}>
                                         <MenuItem
-                                            icon={Building}
-                                            label="Organismes"
+                                            icon={PieChart}
+                                            label="Metrics"
                                             isSubItem={true}
-                                            isActive={isActive('/organisme')}
-                                            isCollapsed={isCollapsed && !isHovered}
-                                        />
-                                    </Link>
-                                    <Link to="/base" onClick={closeSidebar}>
-                                        <MenuItem
-                                            icon={Layers}
-                                            label="Base"
-                                            isSubItem={true}
-                                            isActive={isActive('/base')}
+                                            isActive={isActive('/analytics/metrics')}
                                             isCollapsed={isCollapsed && !isHovered}
                                         />
                                     </Link>
@@ -283,21 +363,29 @@ const Sidebar = () => {
                             </>
                         )}
 
-
                         {/* Collapsed state - show main icons only */}
                         {(isCollapsed && !isHovered) && (
                             <>
                                 <div className="border-t border-gray-200 pt-4 mt-4">
-                                    <Link to="/producteur" onClick={closeSidebar}>
+                                    <Link to="/gestion" onClick={closeSidebar}>
                                         <MenuItem
                                             icon={Users}
-                                            label="Producteur"
-                                            isActive={isActive('/producteur')}
+                                            label="Gestion"
+                                            isActive={isPathActive('/gestion')}
                                             isCollapsed={true}
                                             showTooltip={true}
                                         />
                                     </Link>
 
+                                    <Link to="/analytics" onClick={closeSidebar}>
+                                        <MenuItem
+                                            icon={BarChart3}
+                                            label="Analytics"
+                                            isActive={isPathActive('/analytics')}
+                                            isCollapsed={true}
+                                            showTooltip={true}
+                                        />
+                                    </Link>
                                 </div>
                             </>
                         )}
