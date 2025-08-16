@@ -106,6 +106,20 @@ const OrganismeService = {
             console.error('Erreur lors du changement de statut:', error);
             throw error;
         }
+    },
+
+    // In OrganismeService.js
+    updateStatutOrganisme: async (organismeId, statut) => {
+        try {
+            const response = await API.patch(`/OrganismeCertification/${organismeId}/statut`, {
+                actif: statut
+            });
+
+            return response.data;
+        } catch (error) {
+            console.error('Erreur updateStatutOrganisme:', error);
+            throw error;
+        }
     }
 };
 

@@ -4,8 +4,6 @@ import Reception from "./pages/Reception";
 import Export from "./pages/Export";
 import Ecart from "./pages/Ecart";
 import GestionUtilisateur from "./pages/GestionUtilisateur";
-import DeclarationVerger from "./pages/Producteur/DeclarationVerger";
-import TypeProducteur from "./pages/Producteur/TypeProducteur";
 import Sidebar from "./components/Sidebar";
 import AddProducteur from "./pages/Producteur/producteur/AddProducteur";
 import Producteur from "./pages/Producteur/producteur/Producteur";
@@ -23,6 +21,7 @@ import EditParcelle from "./pages/Producteur/parcelle/EditParcelle";
 import ParcelleDetail from "./pages/Producteur/parcelle/ParcelleDetail";
 import CertificatPage from "./pages/Producteur/certificat/CertificatPage";
 import OrganismePage from "./pages/Producteur/certificat/OrganismePage";
+import DeclarationVerger from "./pages/Producteur/DeclarationVerger/DeclarationVerger";
 
 function App() {
   return (
@@ -62,7 +61,6 @@ function App() {
               <Route path="/certificat" element={<CertificatPage />} />
               <Route path="/organisme" element={<OrganismePage />} />
               <Route path="/base" element={<BasesPage />} />
-              <Route path="/type-producteur" element={<TypeProducteur />} />
 
               {/* Produit routes */}
               <Route path="/produit" element={<ProduitPage />} />

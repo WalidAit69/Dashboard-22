@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { MapPin, TreePine, Settings, Info, Save, X, ChevronLeft } from 'lucide-react';
 import API from '../../../utils/Api';
 import { useNavigate, useParams } from 'react-router-dom';
+import ProtocoleTab from './ProtocoleTab';
 
 const EditParcelle = () => {
   const [activeTab, setActiveTab] = useState('General');
@@ -12,6 +13,7 @@ const EditParcelle = () => {
   const [refError, setRefError] = useState('');
   const navigate = useNavigate();
   const { id } = useParams();
+  const [Parcelle, setParcelle] = useState()
 
   // State for dropdown options
   const [vergers, setVergers] = useState([]);
@@ -56,6 +58,7 @@ const EditParcelle = () => {
     { id: 'Location', label: 'Localisation', icon: MapPin },
     { id: 'Cultivation', label: 'Culture', icon: TreePine },
     { id: 'Technical', label: 'Technique', icon: Settings },
+    { id: 'Protocole', label: 'Protocole', icon: Settings },
   ];
 
   // Fetch all dropdown options
@@ -162,6 +165,7 @@ const EditParcelle = () => {
           refadh: parcelleData.refadh || ''
         };
 
+        setParcelle(parcelleData)
         setFormData(newFormData);
 
         // Store original reference for duplicate checking
@@ -215,8 +219,6 @@ const EditParcelle = () => {
       setIsCheckingRef(false);
     }
   };
-
-  console.log(cascadingOptions)
 
   // Handle cascading dropdown changes
   const handleCascadingChange = (field, value) => {
@@ -893,6 +895,16 @@ const EditParcelle = () => {
                 </select>
               </div>
             </div>
+
+            <NavigationButtons />
+
+          </div>
+        )}
+
+        {/* Protocole Tab Content */}
+        {activeTab === 'Protocole' && (
+          <div className="bg-white rounded-2xl shadow-lg p-8">
+            <ProtocoleTab id={id} parcelle={Parcelle} />
 
             {/* Action Buttons - Only show on the last tab */}
             <div className="flex justify-between items-center mt-8 pt-6 border-t border-gray-200">

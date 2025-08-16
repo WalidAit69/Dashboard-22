@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Building, Plus, Edit2, Trash2, Eye, BarChart3, Search, Calendar, Mail, Phone, Globe, AlertCircle, Power, PowerOff } from 'lucide-react';
+import { Building, Plus, Edit2, Trash2, Eye, BarChart3, Search, Calendar, Mail, Phone, Globe, AlertCircle } from 'lucide-react';
 import OrganismeModal from '../../../components/certificat/OrganismeModal';
 import ConfirmationModal from '../../../components/producteur/ConfirmationModal';
 import OrganismeService from '../../../utils/OrganismeService';
@@ -56,7 +56,13 @@ function OrganismePage() {
     const handleSaveOrganisme = async (organismeData) => {
         try {
             if (selectedOrganisme) {
-                await OrganismeService.updateOrganisme(selectedOrganisme.idOrganisme, organismeData);
+                // Handle status update separately if it has changed
+                if (selectedOrganisme.actif !== organismeData.actif) {
+                    await OrganismeService.updateStatutOrganisme(selectedOrganisme.idOrganisme, organismeData.actif);
+                }
+                // Update other organism data (excluding status)
+                const { actif, ...otherData } = organismeData;
+                await OrganismeService.updateOrganisme(selectedOrganisme.idOrganisme, otherData);
             } else {
                 await OrganismeService.createOrganisme(organismeData);
             }
@@ -78,16 +84,6 @@ function OrganismePage() {
             setSelectedOrganisme(null);
         } catch (error) {
             console.error('Erreur lors de la suppression:', error);
-        }
-    };
-
-    const handleToggleStatut = async (organisme) => {
-        try {
-            const nouveauStatut = organisme.actif ? false : true;
-            await OrganismeService.toggleStatutOrganisme(organisme.idOrganisme, nouveauStatut);
-            await loadOrganismes();
-        } catch (error) {
-            console.error('Erreur lors du changement de statut:', error);
         }
     };
 
@@ -116,7 +112,7 @@ function OrganismePage() {
         return (
             <div className="flex items-center justify-center min-h-64">
                 <div className="text-center">
-                    <div className="w-12 h-12 border-4 border-green-200 border-t-green-500 rounded-full animate-spin mx-auto mb-4"></div>
+                    <div className="w-12 h-12 border-4 border-primary-200 border-t-primary-500 rounded-full animate-spin mx-auto mb-4"></div>
                     <p className="text-gray-600">Chargement des organismes...</p>
                 </div>
             </div>
@@ -128,15 +124,15 @@ function OrganismePage() {
             {/* En-tête */}
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
                 <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
-                        <Building className="w-5 h-5 text-green-600" />
+                    <div className="w-10 h-10 bg-primary-100 rounded-lg flex items-center justify-center">
+                        <Building className="w-5 h-5 text-primary-600" />
                     </div>
                     <div>
                         <h1 className="text-xl font-semibold text-gray-900">Organismes de Certification</h1>
                         <p className="text-sm text-gray-500">Gérer les organismes de certification</p>
                     </div>
                 </div>
-                
+
                 <div className="flex gap-2">
                     <button
                         onClick={loadStatistiques}
@@ -150,7 +146,7 @@ function OrganismePage() {
                             setSelectedOrganisme(null);
                             setModalOpen(true);
                         }}
-                        className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 flex items-center gap-2"
+                        className="px-4 py-2 bg-primary-500 text-white rounded-lg hover:bg-primary-600 flex items-center gap-2"
                     >
                         <Plus size={16} />
                         Nouvel Organisme
@@ -168,14 +164,14 @@ function OrganismePage() {
                             placeholder="Rechercher par nom ou email..."
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
-                            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                         />
                     </div>
                     <div className="sm:w-48">
                         <select
                             value={statusFilter}
                             onChange={(e) => setStatusFilter(e.target.value)}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                         >
                             <option value="all">Tous les organismes</option>
                             <option value="active">Organismes actifs</option>
@@ -203,8 +199,8 @@ function OrganismePage() {
                             <div className="text-sm text-blue-700">Total Organismes</div>
                         </div>
                         <div className="text-center">
-                            <div className="text-2xl font-bold text-green-600">{statistiques.organismesActifs}</div>
-                            <div className="text-sm text-green-700">Organismes Actifs</div>
+                            <div className="text-2xl font-bold text-primary-600">{statistiques.organismesActifs}</div>
+                            <div className="text-sm text-primary-700">Organismes Actifs</div>
                         </div>
                         <div className="text-center">
                             <div className="text-2xl font-bold text-purple-600">{statistiques.organismesAvecCertificats}</div>
@@ -252,13 +248,12 @@ function OrganismePage() {
                                             <td className="p-2">{cert.typeCertificat || '-'}</td>
                                             <td className="p-2">{formatDate(cert.dateExpiration)}</td>
                                             <td className="p-2">
-                                                <span className={`px-2 py-1 rounded-full text-xs ${
-                                                    cert.joursRestants > 90 
-                                                        ? 'bg-green-100 text-green-800' 
-                                                        : cert.joursRestants > 30 
-                                                        ? 'bg-yellow-100 text-yellow-800'
-                                                        : 'bg-red-100 text-red-800'
-                                                }`}>
+                                                <span className={`px-2 py-1 rounded-full text-xs ${cert.joursRestants > 90
+                                                        ? 'bg-primary-100 text-primary-800'
+                                                        : cert.joursRestants > 30
+                                                            ? 'bg-yellow-100 text-yellow-800'
+                                                            : 'bg-red-100 text-red-800'
+                                                    }`}>
                                                     {cert.statut}
                                                 </span>
                                             </td>
@@ -292,19 +287,18 @@ function OrganismePage() {
                                     <tr key={organisme.idOrganisme} className="hover:bg-gray-50">
                                         <td className="py-3 px-4">
                                             <div className="flex items-center gap-3">
-                                                <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
-                                                    <Building className="w-4 h-4 text-green-600" />
+                                                <div className="w-8 h-8 bg-primary-100 rounded-full flex items-center justify-center">
+                                                    <Building className="w-4 h-4 text-primary-600" />
                                                 </div>
                                                 <div>
                                                     <div className="flex items-center gap-2">
                                                         <span className="font-medium text-gray-900">
                                                             {organisme.nomOrganisme}
                                                         </span>
-                                                        <span className={`px-2 py-1 text-xs rounded-full ${
-                                                            organisme.actif 
-                                                                ? 'bg-green-100 text-green-800' 
+                                                        <span className={`px-2 py-1 text-xs rounded-full ${organisme.actif
+                                                                ? 'bg-primary-100 text-primary-800'
                                                                 : 'bg-red-100 text-red-800'
-                                                        }`}>
+                                                            }`}>
                                                             {organisme.actif ? 'Actif' : 'Inactif'}
                                                         </span>
                                                     </div>
@@ -334,9 +328,9 @@ function OrganismePage() {
                                         </td>
                                         <td className="py-3 px-4">
                                             {organisme.siteWeb ? (
-                                                <a 
-                                                    href={organisme.siteWeb} 
-                                                    target="_blank" 
+                                                <a
+                                                    href={organisme.siteWeb}
+                                                    target="_blank"
                                                     rel="noopener noreferrer"
                                                     className="flex items-center gap-1 text-sm text-blue-600 hover:text-blue-800"
                                                 >
@@ -363,22 +357,11 @@ function OrganismePage() {
                                                     <Eye size={16} />
                                                 </button>
                                                 <button
-                                                    onClick={() => handleToggleStatut(organisme)}
-                                                    className={`p-2 rounded-lg transition-colors ${
-                                                        organisme.actif 
-                                                            ? 'text-orange-600 hover:bg-orange-50' 
-                                                            : 'text-green-600 hover:bg-green-50'
-                                                    }`}
-                                                    title={organisme.actif ? 'Désactiver' : 'Activer'}
-                                                >
-                                                    {organisme.actif ? <PowerOff size={16} /> : <Power size={16} />}
-                                                </button>
-                                                <button
                                                     onClick={() => {
                                                         setSelectedOrganisme(organisme);
                                                         setModalOpen(true);
                                                     }}
-                                                    className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors"
+                                                    className="p-2 text-primary-600 hover:bg-primary-50 rounded-lg transition-colors"
                                                     title="Modifier"
                                                 >
                                                     <Edit2 size={16} />

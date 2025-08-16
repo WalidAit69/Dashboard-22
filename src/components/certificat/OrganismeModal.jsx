@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { X, Building, MapPin, Phone, Mail, Globe } from 'lucide-react';
+import { X, Building, MapPin, Phone, Mail, Globe, Power } from 'lucide-react';
 import Modal from '../ui/Modal';
 
 const OrganismeModal = ({ isOpen, onClose, onSave, organisme }) => {
@@ -8,7 +8,8 @@ const OrganismeModal = ({ isOpen, onClose, onSave, organisme }) => {
         adresse: '',
         telephone: '',
         email: '',
-        siteWeb: ''
+        siteWeb: '',
+        actif: true
     });
 
     const [loading, setLoading] = useState(false);
@@ -21,7 +22,8 @@ const OrganismeModal = ({ isOpen, onClose, onSave, organisme }) => {
                 adresse: organisme.adresse || '',
                 telephone: organisme.telephone || '',
                 email: organisme.email || '',
-                siteWeb: organisme.siteWeb || ''
+                siteWeb: organisme.siteWeb || '',
+                actif: organisme.actif !== undefined ? organisme.actif : true
             });
         } else {
             setFormData({
@@ -29,19 +31,20 @@ const OrganismeModal = ({ isOpen, onClose, onSave, organisme }) => {
                 adresse: '',
                 telephone: '',
                 email: '',
-                siteWeb: ''
+                siteWeb: '',
+                actif: true
             });
         }
         setErrors({});
     }, [organisme, isOpen]);
 
     const handleChange = (e) => {
-        const { name, value } = e.target;
+        const { name, value, type, checked } = e.target;
         setFormData(prev => ({
             ...prev,
-            [name]: value
+            [name]: type === 'checkbox' ? checked : value
         }));
-        
+
         if (errors[name]) {
             setErrors(prev => ({
                 ...prev,
@@ -71,7 +74,7 @@ const OrganismeModal = ({ isOpen, onClose, onSave, organisme }) => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        
+
         if (!validateForm()) return;
 
         setLoading(true);
@@ -81,7 +84,8 @@ const OrganismeModal = ({ isOpen, onClose, onSave, organisme }) => {
                 adresse: formData.adresse.trim() || null,
                 telephone: formData.telephone.trim() || null,
                 email: formData.email.trim() || null,
-                siteWeb: formData.siteWeb.trim() || null
+                siteWeb: formData.siteWeb.trim() || null,
+                actif: formData.actif
             };
 
             await onSave(dataToSave);
@@ -93,11 +97,11 @@ const OrganismeModal = ({ isOpen, onClose, onSave, organisme }) => {
     };
 
     return (
-        <Modal isOpen={isOpen} onClose={onClose} size="lg">
+        <Modal isOpen={isOpen} onClose={onClose} className="max-w-3xl">
             <div className="flex items-center justify-between p-6 border-b border-gray-200">
                 <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
-                        <Building className="w-5 h-5 text-green-600" />
+                    <div className="w-10 h-10 bg-primary-100 rounded-lg flex items-center justify-center">
+                        <Building className="w-5 h-5 text-primary-600" />
                     </div>
                     <div>
                         <h2 className="text-lg font-semibold text-gray-900">
@@ -129,9 +133,8 @@ const OrganismeModal = ({ isOpen, onClose, onSave, organisme }) => {
                             name="nomOrganisme"
                             value={formData.nomOrganisme}
                             onChange={handleChange}
-                            className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent ${
-                                errors.nomOrganisme ? 'border-red-500' : 'border-gray-300'
-                            }`}
+                            className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent ${errors.nomOrganisme ? 'border-red-500' : 'border-gray-300'
+                                }`}
                             placeholder="Ex: Ecocert, Bureau Veritas, SGS..."
                         />
                         {errors.nomOrganisme && <p className="text-red-500 text-xs mt-1">{errors.nomOrganisme}</p>}
@@ -148,7 +151,7 @@ const OrganismeModal = ({ isOpen, onClose, onSave, organisme }) => {
                             value={formData.adresse}
                             onChange={handleChange}
                             rows={3}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                             placeholder="Adresse complète de l'organisme..."
                         />
                     </div>
@@ -165,7 +168,7 @@ const OrganismeModal = ({ isOpen, onClose, onSave, organisme }) => {
                                 name="telephone"
                                 value={formData.telephone}
                                 onChange={handleChange}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                                 placeholder="Ex: +33 1 23 45 67 89"
                             />
                         </div>
@@ -180,9 +183,8 @@ const OrganismeModal = ({ isOpen, onClose, onSave, organisme }) => {
                                 name="email"
                                 value={formData.email}
                                 onChange={handleChange}
-                                className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent ${
-                                    errors.email ? 'border-red-500' : 'border-gray-300'
-                                }`}
+                                className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent ${errors.email ? 'border-red-500' : 'border-gray-300'
+                                    }`}
                                 placeholder="contact@organisme.com"
                             />
                             {errors.email && <p className="text-red-500 text-xs mt-1">{errors.email}</p>}
@@ -200,12 +202,44 @@ const OrganismeModal = ({ isOpen, onClose, onSave, organisme }) => {
                             name="siteWeb"
                             value={formData.siteWeb}
                             onChange={handleChange}
-                            className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent ${
-                                errors.siteWeb ? 'border-red-500' : 'border-gray-300'
-                            }`}
+                            className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent ${errors.siteWeb ? 'border-red-500' : 'border-gray-300'
+                                }`}
                             placeholder="https://www.organisme.com"
                         />
                         {errors.siteWeb && <p className="text-red-500 text-xs mt-1">{errors.siteWeb}</p>}
+                    </div>
+
+                    {/* Statut Actif/Inactif - Toujours visible */}
+                    <div>
+                        <label className="flex items-center gap-3 p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+                            <div className="flex items-center gap-2">
+                                <Power className="w-4 h-4 text-gray-600" />
+                                <span className="text-sm font-medium text-gray-700">Statut de l'organisme</span>
+                            </div>
+                            <div className="flex items-center ml-auto">
+                                <input
+                                    type="checkbox"
+                                    name="actif"
+                                    checked={formData.actif}
+                                    onChange={handleChange}
+                                    className="sr-only"
+                                />
+                                <div className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 ${formData.actif ? 'bg-primary-500' : 'bg-gray-200'
+                                    }`}>
+                                    <span
+                                        className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${formData.actif ? 'translate-x-6' : 'translate-x-1'
+                                            }`}
+                                    />
+                                </div>
+                                <span className={`ml-3 text-sm font-medium ${formData.actif ? 'text-primary-600' : 'text-gray-500'
+                                    }`}>
+                                    {formData.actif ? 'Actif' : 'Inactif'}
+                                </span>
+                            </div>
+                        </label>
+                        <p className="text-xs text-gray-500 mt-1">
+                            Les organismes inactifs ne pourront pas émettre de nouveaux certificats
+                        </p>
                     </div>
                 </div>
 
@@ -221,7 +255,7 @@ const OrganismeModal = ({ isOpen, onClose, onSave, organisme }) => {
                     <button
                         type="submit"
                         disabled={loading}
-                        className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                        className="px-4 py-2 bg-primary-500 text-white rounded-lg hover:bg-primary-600 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                     >
                         {loading && <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>}
                         {organisme ? 'Modifier' : 'Créer'}
