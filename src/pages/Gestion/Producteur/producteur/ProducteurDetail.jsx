@@ -38,7 +38,7 @@ const AdherentDetail = () => {
   }, [params.id]);
 
   const handleBack = () => {
-    navigate('/producteur')
+    navigate('/gestion/producteur')
   };
 
   const formatDate = (dateString) => {

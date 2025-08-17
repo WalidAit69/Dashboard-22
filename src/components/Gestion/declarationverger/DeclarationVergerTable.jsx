@@ -261,7 +261,7 @@ const DeclarationVergerTable = ({
                                         <Download className="w-4 h-4" />
                                         Exporter
                                     </button>
-                                    <Link to={"/declaration-verger/add"} className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors flex items-center gap-2">
+                                    <Link to={"/gestion/declaration-verger/add"} className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors flex items-center gap-2">
                                         <Plus className="w-4 h-4" />
                                         Nouvelle Déclaration
                                     </Link>
@@ -444,7 +444,7 @@ const DeclarationVergerTable = ({
                                                     >
                                                         <Trash2 className="w-4 h-4" />
                                                     </button>
-                                                    <Link to={`/declaration-verger/edit/${declaration.id}`}
+                                                    <Link to={`/gestion/declaration-verger/edit/${declaration.id}`}
                                                         className="text-gray-400 hover:text-gray-600 transition-colors"
                                                         title="Modifier"
                                                     >

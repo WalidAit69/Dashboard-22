@@ -354,7 +354,7 @@ const VergerTable = ({ initialData = [], onRefresh }) => {
                   Exporter
                 </button>
                 <Link
-                  to={"/verger/add"}
+                  to={"/gestion/verger/add"}
                   className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors flex items-center gap-2"
                 >
                   <Plus className="w-4 h-4" />
@@ -481,7 +481,7 @@ const VergerTable = ({ initialData = [], onRefresh }) => {
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       <div className="flex items-center space-x-2">
                         <Link
-                          to={`/verger/${verger.refver}`}
+                          to={`/gestion/verger/${verger.refver}`}
                           className="text-gray-400 hover:text-primary-600 transition-colors"
                           title="Voir les détails"
                         >
@@ -495,7 +495,7 @@ const VergerTable = ({ initialData = [], onRefresh }) => {
                           <Trash2 className="w-4 h-4" />
                         </button>
                         <Link
-                          to={`/verger/edit/${verger.refver}`}
+                          to={`/gestion/verger/edit/${verger.refver}`}
                           className="text-gray-400 hover:text-gray-600 transition-colors"
                           title="Modifier"
                         >

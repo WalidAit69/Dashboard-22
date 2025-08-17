@@ -323,7 +323,7 @@ const ProducteurTable = ({ initialData = [], onRefresh }) => {
                   <Download className="w-4 h-4" />
                   Exporter
                 </button>
-                <Link to={"/producteur/add"} className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors flex items-center gap-2">
+                <Link to={"/gestion/producteur/add"} className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors flex items-center gap-2">
                   <Plus className="w-4 h-4" />
                   Nouveau Producteur
                 </Link>
@@ -394,7 +394,7 @@ const ProducteurTable = ({ initialData = [], onRefresh }) => {
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       <div className="flex items-center space-x-2">
                         <Link
-                          to={`/producteur/${adherent.refadh}`}
+                          to={`/gestion/producteur/${adherent.refadh}`}
                           className="text-gray-400 hover:text-primary-600 transition-colors"
                           title="Voir les détails"
                         >
@@ -408,7 +408,7 @@ const ProducteurTable = ({ initialData = [], onRefresh }) => {
                           <Trash2 className="w-4 h-4" />
                         </button>
                         <Link
-                          to={`/producteur/edit/${adherent.refadh}`}
+                          to={`/gestion/producteur/edit/${adherent.refadh}`}
                           className="text-gray-400 hover:text-gray-600 transition-colors"
                           title="Modifier"
                         >

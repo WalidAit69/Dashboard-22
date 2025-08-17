@@ -80,7 +80,7 @@ const ParcelleDetail = () => {
   }, [params.id]);
 
   const handleBack = () => {
-    navigate('/parcelle');
+    navigate('/gestion/parcelle');
   };
 
   const formatDate = (dateString) => {

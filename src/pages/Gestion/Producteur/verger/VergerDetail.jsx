@@ -61,7 +61,7 @@ const VergerDetail = () => {
     }, [params.id]);
 
     const handleBack = () => {
-        navigate('/verger');
+        navigate('/gestion/verger');
     };
 
     const formatSuperficie = (superficie) => {

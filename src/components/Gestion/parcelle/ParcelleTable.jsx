@@ -163,7 +163,7 @@ const ParcelleTable = ({
                                             <Download className="w-4 h-4" />
                                             Exporter
                                         </button>
-                                        <Link to={"/parcelle/add"} className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors flex items-center gap-2">
+                                        <Link to={"/gestion/parcelle/add"} className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors flex items-center gap-2">
                                             <Plus className="w-4 h-4" />
                                             Nouvelle Parcelle
                                         </Link>
@@ -262,7 +262,7 @@ const ParcelleTable = ({
                                                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                                                     <div className="flex items-center space-x-2">
                                                         <Link
-                                                            to={`/parcelle/${parcelle.idparcelle}`}
+                                                            to={`/gestion/parcelle/${parcelle.idparcelle}`}
                                                             className="text-gray-400 hover:text-primary-600 transition-colors"
                                                             title="Voir les détails"
                                                         >
@@ -276,7 +276,7 @@ const ParcelleTable = ({
                                                             <Trash2 className="w-4 h-4" />
                                                         </button>
                                                         <Link
-                                                            to={`/parcelle/edit/${parcelle.idparcelle}`}
+                                                            to={`/gestion/parcelle/edit/${parcelle.idparcelle}`}
                                                             className="text-gray-400 hover:text-gray-600 transition-colors"
                                                             title="Modifier"
                                                         >
